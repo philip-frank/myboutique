@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f9f9f7;
+    color: #111;
+  }
+
+  nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background: rgba(249,249,247,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 0.5px solid rgba(0,0,0,0.08);
+  }
+
+  .nav-logo {
+    font-size: 18px;
+    font-weight: 300;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #111;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .nav-links a:hover { opacity: 1; }
+
+  hero {
+    display: block;
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.38);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-size: clamp(48px, 10vw, 120px);
+    font-weight: 200;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .hero-sub {
+    margin-top: 16px;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .categories {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    overflow-x: auto;
+  }
+
+  .cat-btn {
+    padding: 16px 28px;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    color: #111;
+    opacity: 0.5;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .cat-btn:hover, .cat-btn.active {
+    opacity: 1;
+    border-bottom-color: #111;
+  }
+
+  .section-label {
+    text-align: center;
+    padding: 60px 40px 32px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2px;
+    padding: 0 2px 2px;
+  }
+
+  .card {
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 3/4;
+    cursor: pointer;
+  }
+
+  .card-img {
+    width: 100%;
+    height: 75%;
+    object-fit: cover;
+    display: block;
+    background: #eee;
+  }
+
+  .card-img-placeholder {
+    width: 100%;
+    height: 75%;
+    background: #f0f0ee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #999;
+  }
+
+  .card-info {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .card-category {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+  }
+
+  .card-name {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.3;
+  }
+
+  .card-price {
+    font-size: 13px;
+    font-weight: 300;
+  }
+
+  .card-buy {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: #111;
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+  }
+
+  .card-buy:hover { background: #333; }
+
+  footer {
+    text-align: center;
+    padding: 60px 40px;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.3;
+    border-top: 0.5px solid rgba(0,0,0,0.08);
+    margin-top: 60px;
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 16px 20px; }
+    .nav-links { gap: 16px; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Archive</div>
+  <ul class="nav-links">
+    <li><a href="#" onclick="filter('all')">All</a></li>
+    <li><a href="#" onclick="filter('shoes')">Shoes</a></li>
+    <li><a href="#" onclick="filter('streetwear')">Streetwear</a></li>
+    <li><a href="#" onclick="filter('vintage')">Vintage</a></li>
+    <li><a href="#" onclick="filter('games')">Games</a></li>
+    <li><a href="#" onclick="filter('toys')">Toys</a></li>
+  </ul>
+</nav>
+
+<hero>
+  <img class="hero-img" src="hero.jpg" alt="Archive">
+  <div class="hero-overlay">
+    <div class="hero-title">Archive</div>
+    <div class="hero-sub">Curated goods — Est. 2024</div>
+  </div>
+</hero>
+
+<div class="categories">
+  <button class="cat-btn active" onclick="filter('all')">Everything</button>
+  <button class="cat-btn" onclick="filter('shoes')">Shoes</button>
+  <button class="cat-btn" onclick="filter('streetwear')">Streetwear</button>
+  <button class="cat-btn" onclick="filter('vintage')">Vintage</button>
+  <button class="cat-btn" onclick="filter('games')">Games</button>
+  <button class="cat-btn" onclick="filter('toys')">Toys</button>
+</div>
+
+<div class="section-label">Current Inventory</div>
+
+<div class="grid" id="grid">
+</div>
+
+<footer>
+  Archive &mdash; All sales final &mdash; Payment via Cash App $zapfil
+</footer>
+
+<script>
+const items = [
+  { id: 1, name: "Nike Air Jordan 7 Retro 30th — Black Infrared", category: "shoes", price: 150, size: "10" },
+  { id: 2, name: "Sample Streetwear Item", category: "streetwear", price: 85 },
+  { id: 3, name: "Vintage Band Tee", category: "vintage", price: 65 },
+  { id: 4, name: "Sample Game", category: "games", price: 45 },
+  { id: 5, name: "Vintage Toy", category: "toys", price: 55 },
+];
+
+function cashappLink(item) {
+  const note = encodeURIComponent(item.name);
+  return `https://cash.app/$zapfil/${item.price}?note=${note}`;
+}
+
+function renderGrid(filter) {
+  const grid = document.getElementById('grid');
+  const filtered = filter === 'all' ? items : items.filter(i => i.category === filter);
+  grid.innerHTML = filtered.map(item => `
+    <div class="card" data-category="${item.category}">
+      <div class="card-img-placeholder">No image</div>
+      <div class="card-info">
+        <div class="card-category">${item.category}</div>
+        <div class="card-name">${item.name}</div>
+        <div class="card-price">$${item.price}</div>
+      </div>
+      <a class="card-buy" href="${cashappLink(item)}" target="_blank">Buy — $${item.price}</a>
+    </div>
+  `).join('');
+}
+
+function filter(cat) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderGrid(cat);
+}
+
+renderGrid('all');
+</script>
+
+</body>
+</html>
