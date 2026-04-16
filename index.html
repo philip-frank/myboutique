@@ -204,3 +204,142 @@
     font-size: 10px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+  }
+
+  .card-buy:hover { background: #333; }
+
+  .empty {
+    text-align: center;
+    padding: 80px 40px;
+    font-size: 13px;
+    opacity: 0.4;
+    letter-spacing: 0.1em;
+  }
+
+  footer {
+    text-align: center;
+    padding: 60px 40px;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.3;
+    border-top: 0.5px solid rgba(0,0,0,0.08);
+    margin-top: 60px;
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 16px 20px; }
+    .nav-links { gap: 16px; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Archive</div>
+  <ul class="nav-links">
+    <li><a href="#" onclick="filter('all')">All</a></li>
+    <li><a href="#" onclick="filter('Footwear')">Footwear</a></li>
+    <li><a href="#" onclick="filter('Streetwear')">Streetwear</a></li>
+    <li><a href="#" onclick="filter('Vintage')">Vintage</a></li>
+    <li><a href="#" onclick="filter('Video Games')">Games</a></li>
+    <li><a href="#" onclick="filter('Toys')">Toys</a></li>
+  </ul>
+</nav>
+
+<hero>
+  <img class="hero-img" src="hero.jpeg" alt="Archive">
+  <div class="hero-overlay">
+    <div class="hero-title">Archive</div>
+    <div class="hero-sub">Curated goods</div>
+  </div>
+</hero>
+
+<div class="categories">
+  <button class="cat-btn active" onclick="filter('all')">Everything</button>
+  <button class="cat-btn" onclick="filter('Footwear')">Footwear</button>
+  <button class="cat-btn" onclick="filter('Streetwear')">Streetwear</button>
+  <button class="cat-btn" onclick="filter('Vintage')">Vintage</button>
+  <button class="cat-btn" onclick="filter('Video Games')">Games</button>
+  <button class="cat-btn" onclick="filter('Toys')">Toys</button>
+</div>
+
+<div class="section-label">Current Inventory</div>
+
+<div class="grid" id="grid"></div>
+
+<footer>
+  Archive &mdash; All sales final &mdash; Payment via Cash App $zapfil
+</footer>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let allItems = [];
+  let currentFilter = 'all';
+
+  async function loadInventory() {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('*')
+      .eq('status', 'available')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading inventory:', error);
+      return;
+    }
+
+    allItems = data;
+    renderGrid(currentFilter);
+  }
+
+  function cashappLink(item) {
+    const note = encodeURIComponent(item.name);
+    return `https://cash.app/$zapfil/${item.price}?note=${note}`;
+  }
+
+  function renderGrid(filterCat) {
+    const grid = document.getElementById('grid');
+    const filtered = filterCat === 'all' ? allItems : allItems.filter(i => i.category === filterCat);
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="empty">No items found</div>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(item => `
+      <div class="card">
+        ${item.image_url
+          ? `<img class="card-img" src="${item.image_url}" alt="${item.name}">`
+          : `<div class="card-img-placeholder">${item.category}</div>`
+        }
+        <div class="card-info">
+          <div class="card-category">${item.category}${item.size ? ' &mdash; ' + item.size : ''}</div>
+          <div class="card-name">${item.name}</div>
+          <div class="card-price">$${item.price}</div>
+        </div>
+        <a class="card-buy" href="${cashappLink(item)}" target="_blank">Buy &mdash; $${item.price}</a>
+      </div>
+    `).join('');
+  }
+
+  function filter(cat) {
+    currentFilter = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    renderGrid(cat);
+  }
+
+  loadInventory();
+</script>
+
+</body>
+</html>
