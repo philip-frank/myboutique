@@ -66,4 +66,500 @@
 
   label {
     display: block;
-    fo
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+    appearance: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: #111;
+  }
+
+  textarea { 
+    resize: vertical; 
+    min-height: 100px; 
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .category-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .category-row select {
+    flex: 1;
+  }
+
+  .add-cat-btn {
+    padding: 12px 16px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    cursor: pointer;
+    white-space: nowrap;
+    color: #111;
+    border-radius: 2px;
+  }
+
+  .add-cat-btn:hover {
+    background: #111;
+    color: #fff;
+  }
+
+  .photo-area {
+    border: 0.5px dashed rgba(0,0,0,0.2);
+    background: #fff;
+    border-radius: 2px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+
+  .photo-area:hover { border-color: #111; }
+
+  .photo-area input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .photo-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+  }
+
+  .photo-preview {
+    display: none;
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    margin-top: 16px;
+    border-radius: 2px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    margin-top: 40px;
+    transition: background 0.2s;
+    border-radius: 2px;
+  }
+
+  .submit-btn:hover { background: #333; }
+  .submit-btn:disabled { background: #999; cursor: not-allowed; }
+
+  .status {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    min-height: 20px;
+  }
+
+  .status.success { color: #2d7a4f; }
+  .status.error { color: #c0392b; }
+
+  .inventory-section {
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 0.5px solid rgba(0,0,0,0.1);
+  }
+
+  .inv-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 0.5px solid rgba(0,0,0,0.06);
+  }
+
+  .inv-img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    background: #eee;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .inv-img-placeholder {
+    width: 50px;
+    height: 50px;
+    background: #f0f0ee;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .inv-info { flex: 1; }
+
+  .inv-name {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .inv-meta {
+    font-size: 11px;
+    opacity: 0.4;
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  .inv-price {
+    font-size: 13px;
+    font-weight: 300;
+  }
+
+  .inv-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .inv-btn {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: none;
+    cursor: pointer;
+    border-radius: 2px;
+    color: #111;
+  }
+
+  .inv-btn:hover { background: #111; color: #fff; }
+  .inv-btn.delete:hover { background: #c0392b; border-color: #c0392b; color: #fff; }
+
+  .search-bar {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+    margin-bottom: 20px;
+  }
+
+  .search-bar:focus { outline: none; border-color: #111; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Archive <span>Intake</span></div>
+  <a class="view-site" href="/" target="_blank">View site</a>
+</header>
+
+<div class="section-title">Add new item</div>
+
+<div class="field">
+  <label>Photo</label>
+  <div class="photo-area" id="photoArea">
+    <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="previewPhoto(event)">
+    <div class="photo-label">Tap to take photo or upload</div>
+    <img class="photo-preview" id="photoPreview">
+  </div>
+</div>
+
+<div class="field">
+  <label>Item name</label>
+  <input type="text" id="name" placeholder="e.g. Nike Air Jordan 7 Retro — Black Infrared">
+</div>
+
+<div class="field">
+  <label>Description</label>
+  <textarea id="description" placeholder="Condition details, notable features, any flaws..."></textarea>
+</div>
+
+<div class="field">
+  <label>Category</label>
+  <div class="category-row">
+    <select id="category">
+      <option value="">Select category</option>
+      <option value="Footwear">Footwear</option>
+      <option value="Streetwear">Streetwear</option>
+      <option value="Vintage">Vintage</option>
+      <option value="Video Games">Video Games</option>
+      <option value="Toys">Toys</option>
+    </select>
+    <button class="add-cat-btn" onclick="addCategory()">+ Add</button>
+  </div>
+</div>
+
+<div class="field">
+  <label>Subcategory</label>
+  <input type="text" id="subcategory" placeholder="e.g. Jordan, Supreme, Band Tee, Nintendo...">
+</div>
+
+<div class="row">
+  <div class="field">
+    <label>Price ($)</label>
+    <input type="number" id="price" placeholder="0.00" step="0.01">
+  </div>
+  <div class="field">
+    <label>Size</label>
+    <input type="text" id="size" placeholder="e.g. 10, L, 32x32">
+  </div>
+</div>
+
+<div class="row">
+  <div class="field">
+    <label>Brand</label>
+    <input type="text" id="brand" placeholder="e.g. Nike, Supreme, Vintage">
+  </div>
+  <div class="field">
+    <label>Condition</label>
+    <select id="condition">
+      <option value="">Select condition</option>
+      <option value="New with tags">New with tags</option>
+      <option value="New without tags">New without tags</option>
+      <option value="Used - Like New">Used - Like New</option>
+      <option value="Used - Good">Used - Good</option>
+      <option value="Used - Fair">Used - Fair</option>
+    </select>
+  </div>
+</div>
+
+<div class="field">
+  <label>Location</label>
+  <select id="location">
+    <option value="">Select location</option>
+    <option value="Main">Main</option>
+    <option value="Storage A">Storage A</option>
+    <option value="Storage B">Storage B</option>
+    <option value="Brick and Mortar">Brick and Mortar</option>
+  </select>
+</div>
+
+<div class="field">
+  <label>Source</label>
+  <select id="source">
+    <option value="Intake Form">Intake Form</option>
+    <option value="eBay">eBay</option>
+    <option value="Facebook">Facebook</option>
+    <option value="Brick and Mortar">Brick and Mortar</option>
+  </select>
+</div>
+
+<button class="submit-btn" id="submitBtn" onclick="submitItem()">Add to Archive</button>
+<div class="status" id="status"></div>
+
+<div class="inventory-section">
+  <div class="section-title">Current inventory</div>
+  <input class="search-bar" type="text" placeholder="Search inventory..." oninput="searchInventory(this.value)">
+  <div id="inventoryList"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let allInventory = [];
+  let photoFile = null;
+
+  function previewPhoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    photoFile = file;
+    const preview = document.getElementById('photoPreview');
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+    document.querySelector('.photo-label').style.display = 'none';
+  }
+
+  function addCategory() {
+    const name = prompt('Enter new category name:');
+    if (!name) return;
+    const select = document.getElementById('category');
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+    select.value = name;
+  }
+
+  async function uploadPhoto(file) {
+    const ext = file.name.split('.').pop();
+    const filename = `${Date.now()}.${ext}`;
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(filename, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filename);
+    return urlData.publicUrl;
+  }
+
+  async function submitItem() {
+    const name = document.getElementById('name').value.trim();
+    const category = document.getElementById('category').value;
+    const price = document.getElementById('price').value;
+
+    if (!name || !category || !price) {
+      setStatus('Please fill in name, category and price.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Adding...';
+    setStatus('', '');
+
+    try {
+      let image_url = null;
+      if (photoFile) {
+        image_url = await uploadPhoto(photoFile);
+      }
+
+      const { error } = await supabase.from('inventory').insert([{
+        name,
+        description: document.getElementById('description').value.trim(),
+        category,
+        subcategory: document.getElementById('subcategory').value.trim(),
+        price: parseFloat(price),
+        size: document.getElementById('size').value.trim(),
+        brand: document.getElementById('brand').value.trim(),
+        condition: document.getElementById('condition').value,
+        location: document.getElementById('location').value,
+        source: document.getElementById('source').value,
+        status: 'available',
+        image_url
+      }]);
+
+      if (error) throw error;
+
+      setStatus('Item added to Archive.', 'success');
+      resetForm();
+      loadInventory();
+
+    } catch (err) {
+      setStatus('Error: ' + err.message, 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Add to Archive';
+  }
+
+  function resetForm() {
+    document.getElementById('name').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('category').value = '';
+    document.getElementById('subcategory').value = '';
+    document.getElementById('price').value = '';
+    document.getElementById('size').value = '';
+    document.getElementById('brand').value = '';
+    document.getElementById('condition').value = '';
+    document.getElementById('location').value = '';
+    document.getElementById('source').value = 'Intake Form';
+    photoFile = null;
+    document.getElementById('photoPreview').style.display = 'none';
+    document.querySelector('.photo-label').style.display = 'block';
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  async function loadInventory() {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) return;
+    allInventory = data;
+    renderInventory(data);
+  }
+
+  function searchInventory(query) {
+    const q = query.toLowerCase();
+    const filtered = allInventory.filter(i =>
+      i.name.toLowerCase().includes(q) ||
+      (i.brand && i.brand.toLowerCase().includes(q)) ||
+      (i.category && i.category.toLowerCase().includes(q))
+    );
+    renderInventory(filtered);
+  }
+
+  function renderInventory(items) {
+    const list = document.getElementById('inventoryList');
+    if (items.length === 0) {
+      list.innerHTML = '<div style="font-size:13px;opacity:0.4;padding:20px 0;">No items found</div>';
+      return;
+    }
+    list.innerHTML = items.map(item => `
+      <div class="inv-item">
+        ${item.image_url
+          ? `<img class="inv-img" src="${item.image_url}" alt="${item.name}">`
+          : `<div class="inv-img-placeholder"></div>`
+        }
+        <div class="inv-info">
+          <div class="inv-name">${item.name}</div>
+          <div class="inv-meta">${item.category}${item.size ? ' · ' + item.size : ''}${item.location ? ' · ' + item.location : ''} · ${item.status}</div>
+        </div>
+        <div class="inv-price">$${item.price}</div>
+        <div class="inv-actions">
+          <button class="inv-btn" onclick="markSold('${item.id}')">Sold</button>
+          <button class="inv-btn delete" onclick="deleteItem('${item.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function markSold(id) {
+    await supabase.from('inventory').update({ status: 'sold' }).eq('id', id);
+    loadInventory();
+  }
+
+  async function deleteItem(id) {
+    if (!confirm('Delete this item permanently?')) return;
+    await supabase.from('inventory').delete().eq('id', id);
+    loadInventory();
+  }
+
+  loadInventory();
+</script>
+
+</body>
+</html>
