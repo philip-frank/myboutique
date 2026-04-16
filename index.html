@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Archive</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -218,6 +217,7 @@
     font-size: 13px;
     opacity: 0.4;
     letter-spacing: 0.1em;
+    grid-column: 1 / -1;
   }
 
   footer {
@@ -243,12 +243,12 @@
 <nav>
   <div class="nav-logo">Archive</div>
   <ul class="nav-links">
-    <li><a href="#" onclick="filter('all')">All</a></li>
-    <li><a href="#" onclick="filter('Footwear')">Footwear</a></li>
-    <li><a href="#" onclick="filter('Streetwear')">Streetwear</a></li>
-    <li><a href="#" onclick="filter('Vintage')">Vintage</a></li>
-    <li><a href="#" onclick="filter('Video Games')">Games</a></li>
-    <li><a href="#" onclick="filter('Toys')">Toys</a></li>
+    <li><a href="#" onclick="filterItems('all', event)">All</a></li>
+    <li><a href="#" onclick="filterItems('Footwear', event)">Footwear</a></li>
+    <li><a href="#" onclick="filterItems('Streetwear', event)">Streetwear</a></li>
+    <li><a href="#" onclick="filterItems('Vintage', event)">Vintage</a></li>
+    <li><a href="#" onclick="filterItems('Video Games', event)">Games</a></li>
+    <li><a href="#" onclick="filterItems('Toys', event)">Toys</a></li>
   </ul>
 </nav>
 
@@ -261,12 +261,12 @@
 </hero>
 
 <div class="categories">
-  <button class="cat-btn active" onclick="filter('all')">Everything</button>
-  <button class="cat-btn" onclick="filter('Footwear')">Footwear</button>
-  <button class="cat-btn" onclick="filter('Streetwear')">Streetwear</button>
-  <button class="cat-btn" onclick="filter('Vintage')">Vintage</button>
-  <button class="cat-btn" onclick="filter('Video Games')">Games</button>
-  <button class="cat-btn" onclick="filter('Toys')">Toys</button>
+  <button class="cat-btn active" onclick="filterItems('all', event)">Everything</button>
+  <button class="cat-btn" onclick="filterItems('Footwear', event)">Footwear</button>
+  <button class="cat-btn" onclick="filterItems('Streetwear', event)">Streetwear</button>
+  <button class="cat-btn" onclick="filterItems('Vintage', event)">Vintage</button>
+  <button class="cat-btn" onclick="filterItems('Video Games', event)">Games</button>
+  <button class="cat-btn" onclick="filterItems('Toys', event)">Toys</button>
 </div>
 
 <div class="section-label">Current Inventory</div>
@@ -279,14 +279,20 @@
 
 <script>
   const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
 
+  let db;
   let allItems = [];
   let currentFilter = 'all';
 
+  async function initSupabase() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    loadInventory();
+  }
+
   async function loadInventory() {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('inventory')
       .select('*')
       .eq('status', 'available')
@@ -331,14 +337,17 @@
     `).join('');
   }
 
-  function filter(cat) {
+  function filterItems(cat, event) {
+    event.preventDefault();
     currentFilter = cat;
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    if (event.target.classList.contains('cat-btn')) {
+      event.target.classList.add('active');
+    }
     renderGrid(cat);
   }
 
-  loadInventory();
+  initSupabase();
 </script>
 
 </body>
