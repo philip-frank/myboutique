@@ -242,13 +242,8 @@
 
 <nav>
   <div class="nav-logo">Archive</div>
-  <ul class="nav-links">
+  <ul class="nav-links" id="navLinks">
     <li><a href="#" onclick="filterItems('all', event)">All</a></li>
-    <li><a href="#" onclick="filterItems('Footwear', event)">Footwear</a></li>
-    <li><a href="#" onclick="filterItems('Streetwear', event)">Streetwear</a></li>
-    <li><a href="#" onclick="filterItems('Vintage', event)">Vintage</a></li>
-    <li><a href="#" onclick="filterItems('Video Games', event)">Games</a></li>
-    <li><a href="#" onclick="filterItems('Toys', event)">Toys</a></li>
   </ul>
 </nav>
 
@@ -260,13 +255,8 @@
   </div>
 </hero>
 
-<div class="categories">
+<div class="categories" id="categoryBar">
   <button class="cat-btn active" onclick="filterItems('all', event)">Everything</button>
-  <button class="cat-btn" onclick="filterItems('Footwear', event)">Footwear</button>
-  <button class="cat-btn" onclick="filterItems('Streetwear', event)">Streetwear</button>
-  <button class="cat-btn" onclick="filterItems('Vintage', event)">Vintage</button>
-  <button class="cat-btn" onclick="filterItems('Video Games', event)">Games</button>
-  <button class="cat-btn" onclick="filterItems('Toys', event)">Toys</button>
 </div>
 
 <div class="section-label">Current Inventory</div>
@@ -288,7 +278,35 @@
   async function initSupabase() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    loadInventory();
+    await loadCategories();
+    await loadInventory();
+  }
+
+  async function loadCategories() {
+    const { data, error } = await db
+      .from('categories')
+      .select('name')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading categories:', error);
+      return;
+    }
+
+    const navLinks = document.getElementById('navLinks');
+    const categoryBar = document.getElementById('categoryBar');
+
+    data.forEach(cat => {
+      const li = document.createElement('li');
+      li.innerHTML = `<a href="#" onclick="filterItems('${cat.name}', event)">${cat.name}</a>`;
+      navLinks.appendChild(li);
+
+      const btn = document.createElement('button');
+      btn.className = 'cat-btn';
+      btn.textContent = cat.name;
+      btn.onclick = (e) => filterItems(cat.name, e);
+      categoryBar.appendChild(btn);
+    });
   }
 
   async function loadInventory() {
