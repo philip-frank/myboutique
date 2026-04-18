@@ -242,11 +242,6 @@
   <div class="category-row">
     <select id="itemCategory">
       <option value="">Select category</option>
-      <option value="Footwear">Footwear</option>
-      <option value="Streetwear">Streetwear</option>
-      <option value="Vintage">Vintage</option>
-      <option value="Video Games">Video Games</option>
-      <option value="Toys">Toys</option>
     </select>
     <button class="add-cat-btn" onclick="addCategory()">+ Add</button>
   </div>
@@ -254,7 +249,9 @@
 
 <div class="field">
   <label>Subcategory</label>
-  <input type="text" id="itemSubcategory" placeholder="e.g. Jordan, Supreme, Band Tee, Nintendo...">
+  <div class="category-row">
+    <input type="text" id="itemSubcategory" placeholder="e.g. Jordan, Supreme, Band Tee, Nintendo...">
+  </div>
 </div>
 
 <div class="row">
@@ -271,7 +268,7 @@
 <div class="row">
   <div class="field">
     <label>Brand</label>
-    <input type="text" id="itemBrand" placeholder="e.g. Nike, Supreme, Vintage">
+    <input type="text" id="itemBrand" placeholder="e.g. Nike, Supreme, Burberry">
   </div>
   <div class="field">
     <label>Condition</label>
@@ -327,7 +324,46 @@
   async function initSupabase() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    loadInventory();
+    await loadCategories();
+    await loadInventory();
+  }
+
+  async function loadCategories() {
+    const { data, error } = await db
+      .from('categories')
+      .select('name')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading categories:', error);
+      return;
+    }
+
+    const select = document.getElementById('itemCategory');
+    data.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.name;
+      option.textContent = cat.name;
+      select.appendChild(option);
+    });
+  }
+
+  async function addCategory() {
+    const name = prompt('Enter new category name:');
+    if (!name) return;
+
+    const { error } = await db.from('categories').insert([{ name }]);
+    if (error) {
+      alert('Error adding category: ' + error.message);
+      return;
+    }
+
+    const select = document.getElementById('itemCategory');
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+    select.value = name;
   }
 
   document.getElementById('photoInput').addEventListener('change', function(e) {
@@ -339,17 +375,6 @@
     preview.style.display = 'block';
     document.getElementById('photoLabel').style.display = 'none';
   });
-
-  function addCategory() {
-    const name = prompt('Enter new category name:');
-    if (!name) return;
-    const select = document.getElementById('itemCategory');
-    const option = document.createElement('option');
-    option.value = name;
-    option.textContent = name;
-    select.appendChild(option);
-    select.value = name;
-  }
 
   async function uploadPhoto(file) {
     const ext = file.name.split('.').pop();
@@ -433,7 +458,10 @@
   }
 
   async function loadInventory() {
-    const { data, error } = await db.from('inventory').select('*').order('created_at', { ascending: false });
+    const { data, error } = await db
+      .from('inventory')
+      .select('*')
+      .order('created_at', { ascending: false });
     if (error) return;
     allInventory = data;
     renderInventory(data);
