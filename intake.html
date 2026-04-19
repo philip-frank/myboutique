@@ -509,7 +509,7 @@
     });
   }
 
- async function handleLogin() {
+async function handleLogin() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
 
@@ -534,25 +534,28 @@
       return;
     }
 
-    if (data.session) {
-      const phone = data.user.phone;
-      if (phone) {
-        const { error: otpError } = await db.auth.signInWithOtp({ phone });
-        if (otpError) {
-          setLoginStatus('Error sending SMS: ' + otpError.message, false);
-          btn.disabled = false;
-          btn.textContent = 'Sign in';
-          return;
-        }
-        document.getElementById('emailStep').style.display = 'none';
-        document.getElementById('otpStep').style.display = 'block';
-        setLoginStatus('', false);
-      } else {
-        currentSession = data.session;
-        showIntake();
+    await db.auth.signOut();
+
+    const phone = data.user.phone;
+
+    if (phone) {
+      const { error: otpError } = await db.auth.signInWithOtp({ phone });
+      if (otpError) {
+        setLoginStatus('Error sending SMS: ' + otpError.message, false);
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+        return;
       }
+      document.getElementById('emailStep').style.display = 'none';
+      document.getElementById('otpStep').style.display = 'block';
+    } else {
+      currentSession = data.session;
+      showIntake();
     }
 
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
     btn.disabled = false;
     btn.textContent = 'Sign in';
   }
