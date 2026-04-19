@@ -509,7 +509,7 @@
     });
   }
 
-  async function handleLogin() {
+ async function handleLogin() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
 
@@ -522,12 +522,9 @@
     btn.disabled = true;
     btn.textContent = 'Signing in...';
 
-    const expiresIn = email === OWNER_EMAIL ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
-
     const { data, error } = await db.auth.signInWithPassword({
       email,
-      password,
-      options: { expiresIn }
+      password
     });
 
     if (error) {
@@ -538,96 +535,28 @@
     }
 
     if (data.session) {
-      currentSession = data.session;
-      showIntake();
-    } else {
-      document.getElementById('emailStep').style.display = 'none';
-      document.getElementById('otpStep').style.display = 'block';
+      const phone = data.user.phone;
+      if (phone) {
+        const { error: otpError } = await db.auth.signInWithOtp({ phone });
+        if (otpError) {
+          setLoginStatus('Error sending SMS: ' + otpError.message, false);
+          btn.disabled = false;
+          btn.textContent = 'Sign in';
+          return;
+        }
+        document.getElementById('emailStep').style.display = 'none';
+        document.getElementById('otpStep').style.display = 'block';
+        setLoginStatus('', false);
+      } else {
+        currentSession = data.session;
+        showIntake();
+      }
     }
 
     btn.disabled = false;
     btn.textContent = 'Sign in';
   }
-
-  async function handleOTP() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const token = document.getElementById('otpCode').value.trim();
-
-    if (!token) {
-      setOtpStatus('Please enter the verification code.', false);
-      return;
-    }
-
-    const btn = document.getElementById('otpBtn');
-    btn.disabled = true;
-    btn.textContent = 'Verifying...';
-
-    const { data, error } = await db.auth.verifyOtp({
-      email,
-      token,
-      type: 'email'
-    });
-
-    if (error) {
-      setOtpStatus(error.message, false);
-      btn.disabled = false;
-      btn.textContent = 'Verify';
-      return;
-    }
-
-    currentSession = data.session;
-    showIntake();
-  }
-
-  async function handleLogout() {
-    await db.auth.signOut();
-    showLogin();
-  }
-
-  function showLogin() {
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('intakeScreen').style.display = 'none';
-    document.getElementById('emailStep').style.display = 'block';
-    document.getElementById('otpStep').style.display = 'none';
-  }
-
-  function showIntake() {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('intakeScreen').style.display = 'block';
-    loadCategories();
-    loadInventory();
-  }
-
-  function setLoginStatus(msg, success) {
-    const el = document.getElementById('loginStatus');
-    el.textContent = msg;
-    el.className = 'login-status' + (success ? ' success' : '');
-  }
-
-  function setOtpStatus(msg, success) {
-    const el = document.getElementById('otpStatus');
-    el.textContent = msg;
-    el.className = 'login-status' + (success ? ' success' : '');
-  }
-
-  async function loadCategories() {
-    const { data, error } = await db
-      .from('categories')
-      .select('name')
-      .order('created_at', { ascending: true });
-
-    if (error) return;
-
-    const select = document.getElementById('itemCategory');
-    select.innerHTML = '<option value="">Select category</option>';
-    data.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat.name;
-      option.textContent = cat.name;
-      select.appendChild(option);
-    });
-  }
-
+  
   async function addCategory() {
     const name = prompt('Enter new category name:');
     if (!name) return;
@@ -645,8 +574,40 @@
     select.appendChild(option);
     select.value = name;
   }
+async function handleOTP() {
+    const phone = document.getElementById('loginEmail').value.trim();
+    const token = document.getElementById('otpCode').value.trim();
 
-  document.getElementById('photoInput').addEventListener('change', function(e) {
+    if (!token) {
+      setOtpStatus('Please enter the verification code.', false);
+      return;
+    }
+
+    const btn = document.getElementById('otpBtn');
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+
+    const { data, error } = await db.auth.verifyOtp({
+      phone: await getUserPhone(),
+      token,
+      type: 'sms'
+    });
+
+    if (error) {
+      setOtpStatus(error.message, false);
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+      return;
+    }
+
+    currentSession = data.session;
+    showIntake();
+  }
+
+  async function getUserPhone() {
+    const { data } = await db.auth.getUser();
+    return data.user.phone;
+  }  document.getElementById('photoInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
     selectedPhoto = file;
