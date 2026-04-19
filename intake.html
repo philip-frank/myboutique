@@ -792,7 +792,34 @@
     await db.from('inventory').delete().eq('id', id);
     loadInventory();
   }
+async function checkPasswordReset() {
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      
+      if (accessToken) {
+        const newPassword = prompt('Enter your new password:');
+        if (!newPassword) return;
+        
+        const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+        const tempDb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        await tempDb.auth.setSession({ access_token: accessToken, refresh_token: params.get('refresh_token') });
+        
+        const { error } = await tempDb.auth.updateUser({ password: newPassword });
+        
+        if (error) {
+          alert('Error resetting password: ' + error.message);
+        } else {
+          alert('Password updated successfully! Please log in.');
+          window.location.hash = '';
+        }
+      }
+    }
+  }
 
+  checkPasswordReset();
   initSupabase();
 </script>
 
