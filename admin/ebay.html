@@ -125,6 +125,7 @@
     flex-shrink: 0;
   }
   .result-name { flex: 1; line-height: 1.3; }
+  .result-cat { font-size: 11px; opacity: 0.5; white-space: nowrap; margin-right: 8px; }
   .result-price { opacity: 0.6; white-space: nowrap; }
   .result-status { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 2px; white-space: nowrap; }
   .result-status.imported { background: #e6f4ea; color: #1e6e3a; }
@@ -144,13 +145,20 @@
   }
   .summary-num { font-size: 28px; font-weight: 300; }
   .summary-label { font-size: 11px; opacity: 0.5; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+  .mapping-note {
+    font-size: 12px;
+    opacity: 0.5;
+    margin-top: 8px;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+  }
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo">Archive <span>eBay Import</span></div>
-  <a class="back" href="/intake">Back to intake</a>
+  <a class="back" href="/admin">Back to admin</a>
 </header>
 
 <div class="section-title">Account setup</div>
@@ -165,16 +173,7 @@
   <textarea id="userToken" placeholder="Paste your eBay User Token here..."></textarea>
 </div>
 
-<div class="field">
-  <label>Default category mapping</label>
-  <select id="defaultCategory">
-    <option value="Footwear">Footwear</option>
-    <option value="Apparel">Apparel</option>
-    <option value="Video Games">Video Games</option>
-    <option value="Toys">Toys</option>
-    <option value="Audio">Audio</option>
-  </select>
-</div>
+<p class="mapping-note">Categories will be assigned automatically based on listing titles. Unrecognized items will be marked as Uncategorized for bulk editing later.</p>
 
 <div class="btn-row">
   <button class="btn" onclick="fetchListings()">Fetch listings</button>
@@ -200,25 +199,68 @@
   const EBAY_APP_ID = 'philipwe-archivei-PRD-56c1164ac-a711c0a1';
 
   let db;
-  let fetchedListings = [];
 
   async function init() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    await loadCategoryOptions();
   }
 
-  async function loadCategoryOptions() {
-    const { data } = await db.from('categories').select('name').order('created_at', { ascending: true });
-    if (!data) return;
-    const select = document.getElementById('defaultCategory');
-    select.innerHTML = '';
-    data.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat.name;
-      option.textContent = cat.name;
-      select.appendChild(option);
-    });
+  function mapCategory(title) {
+    if (!title) return 'Uncategorized';
+    const t = title.toLowerCase();
+
+    if (
+      t.includes('jordan') || t.includes('nike') || t.includes('adidas') ||
+      t.includes('yeezy') || t.includes('dunk') || t.includes('air max') ||
+      t.includes('air force') || t.includes('new balance') || t.includes('puma') ||
+      t.includes('reebok') || t.includes('vans') || t.includes('converse') ||
+      t.includes('sneaker') || t.includes('shoe') || t.includes('boot') ||
+      t.includes('cleat') || t.includes('sandal') || t.includes('footwear') ||
+      t.includes('trainer') || t.includes('retro') && t.includes('air')
+    ) return 'Footwear';
+
+    if (
+      t.includes('supreme') || t.includes('bape') || t.includes('off-white') ||
+      t.includes('palace') || t.includes('stussy') || t.includes('kith') ||
+      t.includes('hoodie') || t.includes('hoody') || t.includes('sweatshirt') ||
+      t.includes('t-shirt') || t.includes('tshirt') || t.includes('tee') ||
+      t.includes('shirt') || t.includes('jacket') || t.includes('coat') ||
+      t.includes('pants') || t.includes('jeans') || t.includes('shorts') ||
+      t.includes('sweater') || t.includes('pullover') || t.includes('vest') ||
+      t.includes('burberry') || t.includes('gucci') || t.includes('louis vuitton') ||
+      t.includes('vintage') || t.includes('band tee') || t.includes('rap tee') ||
+      t.includes('jersey') || t.includes('clothing') || t.includes('apparel')
+    ) return 'Apparel';
+
+    if (
+      t.includes('nintendo') || t.includes('playstation') || t.includes('xbox') ||
+      t.includes('sega') || t.includes('game boy') || t.includes('gameboy') ||
+      t.includes('atari') || t.includes('n64') || t.includes('ps1') ||
+      t.includes('ps2') || t.includes('ps3') || t.includes('ps4') ||
+      t.includes('ps5') || t.includes('gamecube') || t.includes('wii') ||
+      t.includes('switch') && (t.includes('game') || t.includes('nintendo')) ||
+      t.includes('cartridge') || t.includes('controller') || t.includes('video game') ||
+      t.includes('rpg') || t.includes('pokemon') && t.includes('game')
+    ) return 'Video Games';
+
+    if (
+      t.includes('toy') || t.includes('action figure') || t.includes('funko') ||
+      t.includes('lego') || t.includes('hot wheels') || t.includes('barbie') ||
+      t.includes('gi joe') || t.includes('transformers') || t.includes('he-man') ||
+      t.includes('teenage mutant') || t.includes('tmnt') || t.includes('star wars') ||
+      t.includes('collectible') || t.includes('doll') || t.includes('plush') ||
+      t.includes('kenner') || t.includes('hasbro') || t.includes('mattel') ||
+      t.includes('vintage toy') || t.includes('neca') || t.includes('mego')
+    ) return 'Toys';
+
+    if (
+      t.includes('headphone') || t.includes('earphone') || t.includes('earbud') ||
+      t.includes('airpod') || t.includes('speaker') || t.includes('bose') ||
+      t.includes('sony wh') || t.includes('audio') || t.includes('soundbar') ||
+      t.includes('turntable') || t.includes('record player') || t.includes('amplifier')
+    ) return 'Audio';
+
+    return 'Uncategorized';
   }
 
   async function fetchListings() {
@@ -240,7 +282,7 @@
 
       while (hasMore) {
         const response = await fetch(
-          `https://api.ebay.com/ws/api.dll`,
+          'https://api.ebay.com/ws/api.dll',
           {
             method: 'POST',
             headers: {
@@ -280,29 +322,33 @@
         const items = xml.querySelectorAll('ActiveList ItemArray Item');
         items.forEach(item => {
           const title = item.querySelector('Title')?.textContent || '';
-          const price = parseFloat(item.querySelector('SellingStatus CurrentPrice')?.textContent || item.querySelector('BuyItNowPrice')?.textContent || '0');
+          const price = parseFloat(
+            item.querySelector('SellingStatus CurrentPrice')?.textContent ||
+            item.querySelector('BuyItNowPrice')?.textContent || '0'
+          );
           const itemId = item.querySelector('ItemID')?.textContent || '';
-          const category = item.querySelector('PrimaryCategory CategoryName')?.textContent || '';
+          const ebayCategory = item.querySelector('PrimaryCategory CategoryName')?.textContent || '';
           const condition = item.querySelector('ConditionDisplayName')?.textContent || '';
-          const imageUrl = item.querySelector('PictureDetails GalleryURL')?.textContent || 
-                          item.querySelector('PictureDetails PictureURL')?.textContent || '';
+          const imageUrl =
+            item.querySelector('PictureDetails GalleryURL')?.textContent ||
+            item.querySelector('PictureDetails PictureURL')?.textContent || '';
           const quantity = parseInt(item.querySelector('Quantity')?.textContent || '1');
           const quantitySold = parseInt(item.querySelector('SellingStatus QuantitySold')?.textContent || '0');
           const available = quantity - quantitySold;
 
           if (title && price > 0 && available > 0) {
-            allListings.push({ title, price, itemId, category, condition, imageUrl, accountName });
+            allListings.push({ title, price, itemId, ebayCategory, condition, imageUrl, accountName });
           }
         });
 
-        const totalPages = parseInt(xml.querySelector('ActiveList PaginationResult TotalNumberOfPages')?.textContent || '1');
+        const totalPages = parseInt(
+          xml.querySelector('ActiveList PaginationResult TotalNumberOfPages')?.textContent || '1'
+        );
         hasMore = pageNum < totalPages;
         pageNum++;
-
         updateProgress((pageNum / (totalPages + 1)) * 60, `Fetched page ${pageNum - 1} of ${totalPages}...`);
       }
 
-      fetchedListings = allListings;
       showStatus(`Found ${allListings.length} active listings. Importing to Archive...`, 'info');
       await importListings(allListings, accountName);
 
@@ -313,7 +359,6 @@
   }
 
   async function importListings(listings, accountName) {
-    const defaultCategory = document.getElementById('defaultCategory').value;
     let imported = 0;
     let skipped = 0;
     let errors = 0;
@@ -332,15 +377,15 @@
 
         if (existing) {
           skipped++;
-          resultItems.push({ ...listing, importStatus: 'skipped' });
+          resultItems.push({ ...listing, importStatus: 'skipped', assignedCategory: '—' });
           continue;
         }
 
-        const mappedCategory = mapEbayCategory(listing.category) || defaultCategory;
+        const assignedCategory = mapCategory(listing.title);
 
         const { error } = await db.from('inventory').insert([{
           name: listing.title,
-          category: mappedCategory,
+          category: assignedCategory,
           price: listing.price,
           condition: listing.condition,
           image_url: listing.imageUrl || null,
@@ -350,28 +395,17 @@
 
         if (error) throw error;
         imported++;
-        resultItems.push({ ...listing, importStatus: 'imported' });
+        resultItems.push({ ...listing, importStatus: 'imported', assignedCategory });
 
       } catch (err) {
         errors++;
-        resultItems.push({ ...listing, importStatus: 'error' });
+        resultItems.push({ ...listing, importStatus: 'error', assignedCategory: '—' });
       }
     }
 
     showProgress(false);
     showResults(resultItems, imported, skipped, errors);
     showStatus(`Import complete — ${imported} imported, ${skipped} skipped, ${errors} errors.`, 'success');
-  }
-
-  function mapEbayCategory(ebayCategory) {
-    if (!ebayCategory) return null;
-    const cat = ebayCategory.toLowerCase();
-    if (cat.includes('shoe') || cat.includes('sneaker') || cat.includes('boot') || cat.includes('footwear')) return 'Footwear';
-    if (cat.includes('shirt') || cat.includes('clothing') || cat.includes('jacket') || cat.includes('pant') || cat.includes('hoodie') || cat.includes('apparel')) return 'Apparel';
-    if (cat.includes('game') || cat.includes('nintendo') || cat.includes('playstation') || cat.includes('xbox') || cat.includes('sega')) return 'Video Games';
-    if (cat.includes('toy') || cat.includes('figure') || cat.includes('collectible')) return 'Toys';
-    if (cat.includes('audio') || cat.includes('headphone') || cat.includes('speaker')) return 'Audio';
-    return null;
   }
 
   function showResults(items, imported, skipped, errors) {
@@ -386,8 +420,11 @@
 
     document.getElementById('resultsList').innerHTML = items.map(item => `
       <div class="result-item">
-        ${item.imageUrl ? `<img class="result-img" src="${item.imageUrl}" alt="${item.title}">` : `<div class="result-img"></div>`}
+        ${item.imageUrl
+          ? `<img class="result-img" src="${item.imageUrl}" alt="${item.title}">`
+          : `<div class="result-img"></div>`}
         <div class="result-name">${item.title}</div>
+        <div class="result-cat">${item.assignedCategory}</div>
         <div class="result-price">$${item.price}</div>
         <div class="result-status ${item.importStatus}">${item.importStatus}</div>
       </div>
