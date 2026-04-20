@@ -748,6 +748,269 @@
   }
 
   initSupabase();
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+
+  let db;
+  let allInventory = [];
+  let selectedPhoto = null;
+  let userPhone = null;
+
+  async function initSupabase() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+    await db.auth.signOut();
+    showLogin();
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    if (!email || !password) {
+      setLoginStatus('Please enter your email and password.');
+      return;
+    }
+
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setLoginStatus(error.message);
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      return;
+    }
+
+    userPhone = data.user.phone;
+    showIntake();
+
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+
+  async function handleOTP() {
+    const token = document.getElementById('otpCode').value.trim();
+
+    if (!token) {
+      setOtpStatus('Please enter the verification code.');
+      return;
+    }
+
+    const btn = document.getElementById('otpBtn');
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+
+    const { data, error } = await db.auth.verifyOtp({
+      phone: userPhone,
+      token,
+      type: 'sms'
+    });
+
+    if (error) {
+      setOtpStatus(error.message);
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+      return;
+    }
+
+    showIntake();
+  }
+
+  async function handleLogout() {
+    await db.auth.signOut();
+    showLogin();
+    document.getElementById('emailStep').style.display = 'block';
+    document.getElementById('otpStep').style.display = 'none';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+  }
+
+  function showLogin() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('intakeScreen').style.display = 'none';
+  }
+
+  function showIntake() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('intakeScreen').style.display = 'block';
+    loadCategories();
+    loadInventory();
+  }
+
+  function setLoginStatus(msg) {
+    document.getElementById('loginStatus').textContent = msg;
+  }
+
+  function setOtpStatus(msg) {
+    document.getElementById('otpStatus').textContent = msg;
+  }
+
+  async function loadCategories() {
+    const { data, error } = await db.from('categories').select('name').order('created_at', { ascending: true });
+    if (error) return;
+    const select = document.getElementById('itemCategory');
+    select.innerHTML = '<option value="">Select category</option>';
+    data.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.name;
+      option.textContent = cat.name;
+      select.appendChild(option);
+    });
+  }
+
+  async function addCategory() {
+    const name = prompt('Enter new category name:');
+    if (!name) return;
+    const { error } = await db.from('categories').insert([{ name }]);
+    if (error) { alert('Error: ' + error.message); return; }
+    const select = document.getElementById('itemCategory');
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+    select.value = name;
+  }
+
+  document.getElementById('photoInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedPhoto = file;
+    const preview = document.getElementById('photoPreview');
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+    document.getElementById('photoLabel').style.display = 'none';
+  });
+
+  async function uploadPhoto(file) {
+    const ext = file.name.split('.').pop();
+    const filename = Date.now() + '.' + ext;
+    const { error } = await db.storage.from('product-images').upload(filename, file);
+    if (error) throw error;
+    const { data } = db.storage.from('product-images').getPublicUrl(filename);
+    return data.publicUrl;
+  }
+
+  async function handleSubmit() {
+    const name = document.getElementById('itemName').value.trim();
+    const category = document.getElementById('itemCategory').value;
+    const price = document.getElementById('itemPrice').value;
+
+    if (!name || !category || !price) {
+      showStatus('Please fill in name, category and price.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Adding...';
+    showStatus('', '');
+
+    try {
+      let image_url = null;
+      if (selectedPhoto) image_url = await uploadPhoto(selectedPhoto);
+
+      const { error } = await db.from('inventory').insert([{
+        name,
+        description: document.getElementById('itemDescription').value.trim(),
+        category,
+        subcategory: document.getElementById('itemSubcategory').value.trim(),
+        price: parseFloat(price),
+        size: document.getElementById('itemSize').value.trim(),
+        brand: document.getElementById('itemBrand').value.trim(),
+        condition: document.getElementById('itemCondition').value,
+        location: document.getElementById('itemLocation').value,
+        source: document.getElementById('itemSource').value,
+        status: 'available',
+        image_url
+      }]);
+
+      if (error) throw error;
+      showStatus('Item added to Archive.', 'success');
+      resetForm();
+      loadInventory();
+    } catch (err) {
+      showStatus('Error: ' + err.message, 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Add to Archive';
+  }
+
+  function resetForm() {
+    ['itemName','itemDescription','itemSubcategory','itemSize','itemBrand'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('itemCategory').value = '';
+    document.getElementById('itemCondition').value = '';
+    document.getElementById('itemLocation').value = '';
+    document.getElementById('itemSource').value = 'Intake Form';
+    document.getElementById('itemPrice').value = '';
+    selectedPhoto = null;
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('photoLabel').style.display = 'block';
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = 'status ' + (type || '');
+  }
+
+  async function loadInventory() {
+    const { data, error } = await db.from('inventory').select('*').order('created_at', { ascending: false });
+    if (error) return;
+    allInventory = data;
+    renderInventory(data);
+  }
+
+  function handleSearch(query) {
+    const q = query.toLowerCase();
+    renderInventory(allInventory.filter(i =>
+      i.name.toLowerCase().includes(q) ||
+      (i.brand && i.brand.toLowerCase().includes(q)) ||
+      (i.category && i.category.toLowerCase().includes(q))
+    ));
+  }
+
+  function renderInventory(items) {
+    const list = document.getElementById('inventoryList');
+    if (items.length === 0) {
+      list.innerHTML = '<div style="font-size:13px;opacity:0.4;padding:20px 0;">No items found</div>';
+      return;
+    }
+    list.innerHTML = items.map(item => `
+      <div class="inv-item">
+        ${item.image_url ? `<img class="inv-img" src="${item.image_url}" alt="${item.name}">` : `<div class="inv-img-placeholder"></div>`}
+        <div class="inv-info">
+          <div class="inv-name">${item.name}</div>
+          <div class="inv-meta">${item.category}${item.size ? ' · ' + item.size : ''}${item.location ? ' · ' + item.location : ''} · ${item.status}</div>
+        </div>
+        <div class="inv-price">$${item.price}</div>
+        <div class="inv-actions">
+          <button class="inv-btn" onclick="markSold('${item.id}')">Sold</button>
+          <button class="inv-btn delete" onclick="removeItem('${item.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function markSold(id) {
+    await db.from('inventory').update({ status: 'sold' }).eq('id', id);
+    loadInventory();
+  }
+
+  async function removeItem(id) {
+    if (!confirm('Delete this item permanently?')) return;
+    await db.from('inventory').delete().eq('id', id);
+    loadInventory();
+  }
+
+  initSupabase();
 </script>
 
 </body>
