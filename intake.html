@@ -43,9 +43,7 @@
     margin-bottom: 48px;
   }
 
-  .login-field {
-    margin-bottom: 16px;
-  }
+  .login-field { margin-bottom: 16px; }
 
   .login-label {
     display: block;
@@ -98,8 +96,6 @@
   }
 
   .login-status.success { color: #2d7a4f; }
-
-  .otp-screen { display: none; }
 
   .intake-screen { display: none; }
 
@@ -487,34 +483,27 @@
   let db;
   let allInventory = [];
   let selectedPhoto = null;
-  let currentSession = null;
+  let userPhone = null;
 
   async function initSupabase() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const { data: { session } } = await db.auth.getSession();
-    if (session) {
-      currentSession = session;
-      showIntake();
-    }
-
-    db.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        currentSession = session;
-        showIntake();
-      } else if (event === 'SIGNED_OUT') {
-        showLogin();
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
       }
     });
+
+    await db.auth.signOut();
+    showLogin();
   }
 
-async function handleLogin() {
+  async function handleLogin() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
 
     if (!email || !password) {
-      setLoginStatus('Please enter your email and password.', false);
+      setLoginStatus('Please enter your email and password.');
       return;
     }
 
@@ -522,26 +511,22 @@ async function handleLogin() {
     btn.disabled = true;
     btn.textContent = 'Signing in...';
 
-    const { data, error } = await db.auth.signInWithPassword({
-      email,
-      password
-    });
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setLoginStatus(error.message, false);
+      setLoginStatus(error.message);
       btn.disabled = false;
       btn.textContent = 'Sign in';
       return;
     }
 
-    await db.auth.signOut();
+    userPhone = data.user.phone;
 
-    const phone = data.user.phone;
-
-    if (phone) {
-      const { error: otpError } = await db.auth.signInWithOtp({ phone });
+    if (userPhone) {
+      await db.auth.signOut();
+      const { error: otpError } = await db.auth.signInWithOtp({ phone: userPhone });
       if (otpError) {
-        setLoginStatus('Error sending SMS: ' + otpError.message, false);
+        setLoginStatus('Error sending SMS: ' + otpError.message);
         btn.disabled = false;
         btn.textContent = 'Sign in';
         return;
@@ -549,40 +534,18 @@ async function handleLogin() {
       document.getElementById('emailStep').style.display = 'none';
       document.getElementById('otpStep').style.display = 'block';
     } else {
-      currentSession = data.session;
       showIntake();
     }
 
     btn.disabled = false;
     btn.textContent = 'Sign in';
   }
-    btn.disabled = false;
-    btn.textContent = 'Sign in';
-  }
-  
-  async function addCategory() {
-    const name = prompt('Enter new category name:');
-    if (!name) return;
 
-    const { error } = await db.from('categories').insert([{ name }]);
-    if (error) {
-      alert('Error adding category: ' + error.message);
-      return;
-    }
-
-    const select = document.getElementById('itemCategory');
-    const option = document.createElement('option');
-    option.value = name;
-    option.textContent = name;
-    select.appendChild(option);
-    select.value = name;
-  }
-async function handleOTP() {
-    const phone = document.getElementById('loginEmail').value.trim();
+  async function handleOTP() {
     const token = document.getElementById('otpCode').value.trim();
 
     if (!token) {
-      setOtpStatus('Please enter the verification code.', false);
+      setOtpStatus('Please enter the verification code.');
       return;
     }
 
@@ -591,26 +554,80 @@ async function handleOTP() {
     btn.textContent = 'Verifying...';
 
     const { data, error } = await db.auth.verifyOtp({
-      phone: await getUserPhone(),
+      phone: userPhone,
       token,
       type: 'sms'
     });
 
     if (error) {
-      setOtpStatus(error.message, false);
+      setOtpStatus(error.message);
       btn.disabled = false;
       btn.textContent = 'Verify';
       return;
     }
 
-    currentSession = data.session;
     showIntake();
   }
 
-  async function getUserPhone() {
-    const { data } = await db.auth.getUser();
-    return data.user.phone;
-  }  document.getElementById('photoInput').addEventListener('change', function(e) {
+  async function handleLogout() {
+    await db.auth.signOut();
+    showLogin();
+    document.getElementById('emailStep').style.display = 'block';
+    document.getElementById('otpStep').style.display = 'none';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+  }
+
+  function showLogin() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('intakeScreen').style.display = 'none';
+  }
+
+  function showIntake() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('intakeScreen').style.display = 'block';
+    loadCategories();
+    loadInventory();
+  }
+
+  function setLoginStatus(msg) {
+    document.getElementById('loginStatus').textContent = msg;
+  }
+
+  function setOtpStatus(msg) {
+    document.getElementById('otpStatus').textContent = msg;
+  }
+
+  async function loadCategories() {
+    const { data, error } = await db
+      .from('categories')
+      .select('name')
+      .order('created_at', { ascending: true });
+    if (error) return;
+    const select = document.getElementById('itemCategory');
+    select.innerHTML = '<option value="">Select category</option>';
+    data.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.name;
+      option.textContent = cat.name;
+      select.appendChild(option);
+    });
+  }
+
+  async function addCategory() {
+    const name = prompt('Enter new category name:');
+    if (!name) return;
+    const { error } = await db.from('categories').insert([{ name }]);
+    if (error) { alert('Error: ' + error.message); return; }
+    const select = document.getElementById('itemCategory');
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+    select.value = name;
+  }
+
+  document.getElementById('photoInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
     selectedPhoto = file;
@@ -646,9 +663,7 @@ async function handleOTP() {
 
     try {
       let image_url = null;
-      if (selectedPhoto) {
-        image_url = await uploadPhoto(selectedPhoto);
-      }
+      if (selectedPhoto) image_url = await uploadPhoto(selectedPhoto);
 
       const { error } = await db.from('inventory').insert([{
         name,
@@ -666,11 +681,9 @@ async function handleOTP() {
       }]);
 
       if (error) throw error;
-
       showStatus('Item added to Archive.', 'success');
       resetForm();
       loadInventory();
-
     } catch (err) {
       showStatus('Error: ' + err.message, 'error');
     }
@@ -680,16 +693,12 @@ async function handleOTP() {
   }
 
   function resetForm() {
-    document.getElementById('itemName').value = '';
-    document.getElementById('itemDescription').value = '';
+    ['itemName','itemDescription','itemSubcategory','itemSize','itemBrand'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('itemCategory').value = '';
-    document.getElementById('itemSubcategory').value = '';
-    document.getElementById('itemPrice').value = '';
-    document.getElementById('itemSize').value = '';
-    document.getElementById('itemBrand').value = '';
     document.getElementById('itemCondition').value = '';
     document.getElementById('itemLocation').value = '';
     document.getElementById('itemSource').value = 'Intake Form';
+    document.getElementById('itemPrice').value = '';
     selectedPhoto = null;
     document.getElementById('photoPreview').style.display = 'none';
     document.getElementById('photoLabel').style.display = 'block';
@@ -698,14 +707,11 @@ async function handleOTP() {
   function showStatus(msg, type) {
     const el = document.getElementById('statusMsg');
     el.textContent = msg;
-    el.className = 'status ' + type;
+    el.className = 'status ' + (type || '');
   }
 
   async function loadInventory() {
-    const { data, error } = await db
-      .from('inventory')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await db.from('inventory').select('*').order('created_at', { ascending: false });
     if (error) return;
     allInventory = data;
     renderInventory(data);
@@ -713,12 +719,11 @@ async function handleOTP() {
 
   function handleSearch(query) {
     const q = query.toLowerCase();
-    const filtered = allInventory.filter(i =>
+    renderInventory(allInventory.filter(i =>
       i.name.toLowerCase().includes(q) ||
       (i.brand && i.brand.toLowerCase().includes(q)) ||
       (i.category && i.category.toLowerCase().includes(q))
-    );
-    renderInventory(filtered);
+    ));
   }
 
   function renderInventory(items) {
@@ -729,10 +734,7 @@ async function handleOTP() {
     }
     list.innerHTML = items.map(item => `
       <div class="inv-item">
-        ${item.image_url
-          ? `<img class="inv-img" src="${item.image_url}" alt="${item.name}">`
-          : `<div class="inv-img-placeholder"></div>`
-        }
+        ${item.image_url ? `<img class="inv-img" src="${item.image_url}" alt="${item.name}">` : `<div class="inv-img-placeholder"></div>`}
         <div class="inv-info">
           <div class="inv-name">${item.name}</div>
           <div class="inv-meta">${item.category}${item.size ? ' · ' + item.size : ''}${item.location ? ' · ' + item.location : ''} · ${item.status}</div>
@@ -756,34 +758,7 @@ async function handleOTP() {
     await db.from('inventory').delete().eq('id', id);
     loadInventory();
   }
-async function checkPasswordReset() {
-    const hash = window.location.hash;
-    if (hash && hash.includes('type=recovery')) {
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get('access_token');
-      
-      if (accessToken) {
-        const newPassword = prompt('Enter your new password:');
-        if (!newPassword) return;
-        
-        const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-        const tempDb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        await tempDb.auth.setSession({ access_token: accessToken, refresh_token: params.get('refresh_token') });
-        
-        const { error } = await tempDb.auth.updateUser({ password: newPassword });
-        
-        if (error) {
-          alert('Error resetting password: ' + error.message);
-        } else {
-          alert('Password updated successfully! Please log in.');
-          window.location.hash = '';
-        }
-      }
-    }
-  }
 
-  checkPasswordReset();
   initSupabase();
 </script>
 
