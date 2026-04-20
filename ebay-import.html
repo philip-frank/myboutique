@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — eBay Import</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f9f9f7;
+    color: #111;
+    padding: 40px 20px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+  }
+  .logo { font-size: 16px; font-weight: 300; letter-spacing: 0.25em; text-transform: uppercase; }
+  .logo span { font-size: 11px; opacity: 0.4; letter-spacing: 0.15em; margin-left: 12px; }
+  .back { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; color: #111; opacity: 0.5; }
+  .back:hover { opacity: 1; }
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 20px;
+    margin-top: 40px;
+  }
+  .field { margin-bottom: 20px; }
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #111; }
+  textarea { resize: vertical; min-height: 120px; font-size: 12px; }
+  .btn {
+    padding: 14px 24px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #333; }
+  .btn:disabled { background: #999; cursor: not-allowed; }
+  .btn-outline {
+    background: none;
+    color: #111;
+    border: 0.5px solid rgba(0,0,0,0.2);
+  }
+  .btn-outline:hover { background: #f0f0ee; }
+  .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+  .status {
+    margin-top: 20px;
+    font-size: 13px;
+    padding: 12px 16px;
+    border-radius: 2px;
+    display: none;
+  }
+  .status.info { display: block; background: #e8f0fe; color: #1a56c4; }
+  .status.success { display: block; background: #e6f4ea; color: #1e6e3a; }
+  .status.error { display: block; background: #fce8e8; color: #c0392b; }
+  .progress { margin-top: 20px; display: none; }
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #111;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-text { font-size: 12px; opacity: 0.5; letter-spacing: 0.05em; }
+  .results {
+    margin-top: 40px;
+    border-top: 0.5px solid rgba(0,0,0,0.1);
+    padding-top: 40px;
+    display: none;
+  }
+  .result-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    font-size: 13px;
+  }
+  .result-img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 2px;
+    background: #eee;
+    flex-shrink: 0;
+  }
+  .result-name { flex: 1; line-height: 1.3; }
+  .result-price { opacity: 0.6; white-space: nowrap; }
+  .result-status { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 2px; white-space: nowrap; }
+  .result-status.imported { background: #e6f4ea; color: #1e6e3a; }
+  .result-status.skipped { background: #f0f0ee; color: #666; }
+  .result-status.error { background: #fce8e8; color: #c0392b; }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: #f0f0ee;
+    border-radius: 2px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-num { font-size: 28px; font-weight: 300; }
+  .summary-label { font-size: 11px; opacity: 0.5; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Archive <span>eBay Import</span></div>
+  <a class="back" href="/intake">Back to intake</a>
+</header>
+
+<div class="section-title">Account setup</div>
+
+<div class="field">
+  <label>Account nickname</label>
+  <input type="text" id="accountName" placeholder="e.g. Account 1, Sneakers Account, Main eBay...">
+</div>
+
+<div class="field">
+  <label>User token</label>
+  <textarea id="userToken" placeholder="Paste your eBay User Token here..."></textarea>
+</div>
+
+<div class="field">
+  <label>Default category mapping</label>
+  <select id="defaultCategory">
+    <option value="Footwear">Footwear</option>
+    <option value="Apparel">Apparel</option>
+    <option value="Video Games">Video Games</option>
+    <option value="Toys">Toys</option>
+    <option value="Audio">Audio</option>
+  </select>
+</div>
+
+<div class="btn-row">
+  <button class="btn" onclick="fetchListings()">Fetch listings</button>
+  <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="progress" id="progress">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">Fetching listings...</div>
+</div>
+
+<div class="results" id="results">
+  <div class="section-title">Import results</div>
+  <div class="summary" id="summary"></div>
+  <div id="resultsList"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+  const EBAY_APP_ID = 'philipwe-archivei-PRD-56c1164ac-a711c0a1';
+
+  let db;
+  let fetchedListings = [];
+
+  async function init() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    await loadCategoryOptions();
+  }
+
+  async function loadCategoryOptions() {
+    const { data } = await db.from('categories').select('name').order('created_at', { ascending: true });
+    if (!data) return;
+    const select = document.getElementById('defaultCategory');
+    select.innerHTML = '';
+    data.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.name;
+      option.textContent = cat.name;
+      select.appendChild(option);
+    });
+  }
+
+  async function fetchListings() {
+    const token = document.getElementById('userToken').value.trim();
+    const accountName = document.getElementById('accountName').value.trim() || 'eBay Account';
+
+    if (!token) {
+      showStatus('Please paste your eBay User Token.', 'error');
+      return;
+    }
+
+    showStatus('Connecting to eBay API...', 'info');
+    showProgress(true, 'Fetching your active listings...');
+
+    try {
+      let allListings = [];
+      let pageNum = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await fetch(
+          `https://api.ebay.com/ws/api.dll`,
+          {
+            method: 'POST',
+            headers: {
+              'X-EBAY-API-SITEID': '0',
+              'X-EBAY-API-COMPATIBILITY-LEVEL': '967',
+              'X-EBAY-API-CALL-NAME': 'GetMyeBaySelling',
+              'X-EBAY-API-IAF-TOKEN': token,
+              'Content-Type': 'text/xml'
+            },
+            body: `<?xml version="1.0" encoding="utf-8"?>
+<GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents">
+  <RequesterCredentials>
+    <eBayAuthToken>${token}</eBayAuthToken>
+  </RequesterCredentials>
+  <ActiveList>
+    <Include>true</Include>
+    <Pagination>
+      <EntriesPerPage>200</EntriesPerPage>
+      <PageNumber>${pageNum}</PageNumber>
+    </Pagination>
+  </ActiveList>
+  <DetailLevel>ReturnAll</DetailLevel>
+</GetMyeBaySellingRequest>`
+          }
+        );
+
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'text/xml');
+
+        const ack = xml.querySelector('Ack')?.textContent;
+        if (ack !== 'Success' && ack !== 'Warning') {
+          const errMsg = xml.querySelector('ShortMessage')?.textContent || 'Unknown eBay API error';
+          throw new Error(errMsg);
+        }
+
+        const items = xml.querySelectorAll('ActiveList ItemArray Item');
+        items.forEach(item => {
+          const title = item.querySelector('Title')?.textContent || '';
+          const price = parseFloat(item.querySelector('SellingStatus CurrentPrice')?.textContent || item.querySelector('BuyItNowPrice')?.textContent || '0');
+          const itemId = item.querySelector('ItemID')?.textContent || '';
+          const category = item.querySelector('PrimaryCategory CategoryName')?.textContent || '';
+          const condition = item.querySelector('ConditionDisplayName')?.textContent || '';
+          const imageUrl = item.querySelector('PictureDetails GalleryURL')?.textContent || 
+                          item.querySelector('PictureDetails PictureURL')?.textContent || '';
+          const quantity = parseInt(item.querySelector('Quantity')?.textContent || '1');
+          const quantitySold = parseInt(item.querySelector('SellingStatus QuantitySold')?.textContent || '0');
+          const available = quantity - quantitySold;
+
+          if (title && price > 0 && available > 0) {
+            allListings.push({ title, price, itemId, category, condition, imageUrl, accountName });
+          }
+        });
+
+        const totalPages = parseInt(xml.querySelector('ActiveList PaginationResult TotalNumberOfPages')?.textContent || '1');
+        hasMore = pageNum < totalPages;
+        pageNum++;
+
+        updateProgress((pageNum / (totalPages + 1)) * 60, `Fetched page ${pageNum - 1} of ${totalPages}...`);
+      }
+
+      fetchedListings = allListings;
+      showStatus(`Found ${allListings.length} active listings. Importing to Archive...`, 'info');
+      await importListings(allListings, accountName);
+
+    } catch (err) {
+      showStatus('Error: ' + err.message, 'error');
+      showProgress(false);
+    }
+  }
+
+  async function importListings(listings, accountName) {
+    const defaultCategory = document.getElementById('defaultCategory').value;
+    let imported = 0;
+    let skipped = 0;
+    let errors = 0;
+    const resultItems = [];
+
+    for (let i = 0; i < listings.length; i++) {
+      const listing = listings[i];
+      updateProgress(60 + ((i / listings.length) * 40), `Importing ${i + 1} of ${listings.length}...`);
+
+      try {
+        const { data: existing } = await db
+          .from('inventory')
+          .select('id')
+          .eq('name', listing.title)
+          .single();
+
+        if (existing) {
+          skipped++;
+          resultItems.push({ ...listing, importStatus: 'skipped' });
+          continue;
+        }
+
+        const mappedCategory = mapEbayCategory(listing.category) || defaultCategory;
+
+        const { error } = await db.from('inventory').insert([{
+          name: listing.title,
+          category: mappedCategory,
+          price: listing.price,
+          condition: listing.condition,
+          image_url: listing.imageUrl || null,
+          source: `eBay — ${accountName}`,
+          status: 'available'
+        }]);
+
+        if (error) throw error;
+        imported++;
+        resultItems.push({ ...listing, importStatus: 'imported' });
+
+      } catch (err) {
+        errors++;
+        resultItems.push({ ...listing, importStatus: 'error' });
+      }
+    }
+
+    showProgress(false);
+    showResults(resultItems, imported, skipped, errors);
+    showStatus(`Import complete — ${imported} imported, ${skipped} skipped, ${errors} errors.`, 'success');
+  }
+
+  function mapEbayCategory(ebayCategory) {
+    if (!ebayCategory) return null;
+    const cat = ebayCategory.toLowerCase();
+    if (cat.includes('shoe') || cat.includes('sneaker') || cat.includes('boot') || cat.includes('footwear')) return 'Footwear';
+    if (cat.includes('shirt') || cat.includes('clothing') || cat.includes('jacket') || cat.includes('pant') || cat.includes('hoodie') || cat.includes('apparel')) return 'Apparel';
+    if (cat.includes('game') || cat.includes('nintendo') || cat.includes('playstation') || cat.includes('xbox') || cat.includes('sega')) return 'Video Games';
+    if (cat.includes('toy') || cat.includes('figure') || cat.includes('collectible')) return 'Toys';
+    if (cat.includes('audio') || cat.includes('headphone') || cat.includes('speaker')) return 'Audio';
+    return null;
+  }
+
+  function showResults(items, imported, skipped, errors) {
+    const resultsEl = document.getElementById('results');
+    resultsEl.style.display = 'block';
+
+    document.getElementById('summary').innerHTML = `
+      <div class="summary-card"><div class="summary-num">${imported}</div><div class="summary-label">Imported</div></div>
+      <div class="summary-card"><div class="summary-num">${skipped}</div><div class="summary-label">Skipped</div></div>
+      <div class="summary-card"><div class="summary-num">${errors}</div><div class="summary-label">Errors</div></div>
+    `;
+
+    document.getElementById('resultsList').innerHTML = items.map(item => `
+      <div class="result-item">
+        ${item.imageUrl ? `<img class="result-img" src="${item.imageUrl}" alt="${item.title}">` : `<div class="result-img"></div>`}
+        <div class="result-name">${item.title}</div>
+        <div class="result-price">$${item.price}</div>
+        <div class="result-status ${item.importStatus}">${item.importStatus}</div>
+      </div>
+    `).join('');
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function showProgress(show, text) {
+    const el = document.getElementById('progress');
+    el.style.display = show ? 'block' : 'none';
+    if (text) document.getElementById('progressText').textContent = text;
+    if (!show) updateProgress(0);
+  }
+
+  function updateProgress(pct, text) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    if (text) document.getElementById('progressText').textContent = text;
+  }
+
+  function clearForm() {
+    document.getElementById('accountName').value = '';
+    document.getElementById('userToken').value = '';
+    document.getElementById('status').className = 'status';
+    document.getElementById('results').style.display = 'none';
+    showProgress(false);
+  }
+
+  init();
+</script>
+
+</body>
+</html>
