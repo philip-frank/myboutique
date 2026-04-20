@@ -522,19 +522,7 @@
 
     userPhone = data.user.phone;
 
-    if (userPhone) {
-      await db.auth.signOut();
-      const { error: otpError } = await db.auth.signInWithOtp({ phone: userPhone });
-      if (otpError) {
-        setLoginStatus('Error sending SMS: ' + otpError.message);
-        btn.disabled = false;
-        btn.textContent = 'Sign in';
-        return;
-      }
-      document.getElementById('emailStep').style.display = 'none';
-      document.getElementById('otpStep').style.display = 'block';
-    } else {
-      showIntake();
+    showIntake();
     }
 
     btn.disabled = false;
