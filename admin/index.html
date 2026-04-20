@@ -1,1 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — Admin</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f9f9f7;
+    color: #111;
+    min-height: 100vh;
+  }
 
+  .login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .login-box { width: 100%; max-width: 380px; }
+
+  .login-logo {
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .login-sub {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 48px;
+  }
+
+  .login-field { margin-bottom: 16px; }
+
+  .login-label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+
+  .login-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .login-input:focus { border-color: #111; }
+
+  .login-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    margin-top: 24px;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  .login-btn:hover { background: #333; }
+  .login-btn:disabled { background: #999; cursor: not-allowed; }
+
+  .login-status {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    min-height: 20px;
+    color: #c0392b;
+  }
+
+  .admin-screen { display: none; }
+
+  .admin-wrap {
+    padding: 40px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 60px;
+    padding-bottom: 20px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+  }
+
+  .admin-logo {
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+
+  .admin-logo span {
+    font-size: 11px;
+    opacity: 0.4;
+    letter-spacing: 0.15em;
+    margin-left: 12px;
+  }
+
+  .admin-actions { display: flex; gap: 20px; align-items: center; }
+
+  .view-site, .logout-btn {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #111;
+    opacity: 0.5;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .view-site:hover, .logout-btn:hover { opacity: 1; }
+
+  .welcome {
+    margin-bottom: 48px;
+  }
+
+  .welcome-title {
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .welcome-sub {
+    font-size: 13px;
+    opacity: 0.4;
+    letter-spacing: 0.05em;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 60px;
+  }
+
+  .stat-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 20px;
+  }
+
+  .stat-num {
+    font-size: 32px;
+    font-weight: 300;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+  }
+
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 20px;
+  }
+
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 60px;
+  }
+
+  .tool-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 24px;
+    text-decoration: none;
+    color: #111;
+    transition: border-color 0.2s;
+    display: block;
+  }
+
+  .tool-card:hover { border-color: #111; }
+
+  .tool-icon {
+    font-size: 24px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .tool-name {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .tool-desc {
+    font-size: 12px;
+    opacity: 0.4;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+  }
+
+  .recent-section { margin-bottom: 60px; }
+
+  .inv-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 0.5px solid rgba(0,0,0,0.06);
+  }
+
+  .inv-img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 2px;
+    background: #eee;
+    flex-shrink: 0;
+  }
+
+  .inv-img-placeholder {
+    width: 40px;
+    height: 40px;
+    background: #f0f0ee;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .inv-info { flex: 1; }
+  .inv-name { font-size: 13px; line-height: 1.3; }
+  .inv-meta { font-size: 11px; opacity: 0.4; margin-top: 2px; }
+  .inv-price { font-size: 13px; font-weight: 300; white-space: nowrap; }
+
+  @media (max-width: 600px) {
+    .admin-wrap { padding: 20px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .tools { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Archive</div>
+    <div class="login-sub">Admin — Staff access only</div>
+    <div class="login-field">
+      <label class="login-label">Email</label>
+      <input class="login-input" type="email" id="loginEmail" placeholder="your@email.com">
+    </div>
+    <div class="login-field">
+      <label class="login-label">Password</label>
+      <input class="login-input" type="password" id="loginPassword" placeholder="••••••••">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="handleLogin()">Sign in</button>
+    <div class="login-status" id="loginStatus"></div>
+  </div>
+</div>
+
+<div class="admin-screen" id="adminScreen">
+  <div class="admin-wrap">
+    <div class="admin-header">
+      <div class="admin-logo">Archive <span>Admin</span></div>
+      <div class="admin-actions">
+        <a class="view-site" href="/" target="_blank">View site</a>
+        <button class="logout-btn" onclick="handleLogout()">Sign out</button>
+      </div>
+    </div>
+
+    <div class="welcome">
+      <div class="welcome-title">Good to see you.</div>
+      <div class="welcome-sub" id="welcomeSub">Loading inventory...</div>
+    </div>
+
+    <div class="stats" id="stats">
+      <div class="stat-card"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Total items</div></div>
+      <div class="stat-card"><div class="stat-num" id="statAvailable">—</div><div class="stat-label">Available</div></div>
+      <div class="stat-card"><div class="stat-num" id="statSold">—</div><div class="stat-label">Sold</div></div>
+      <div class="stat-card"><div class="stat-num" id="statValue">—</div><div class="stat-label">Total value</div></div>
+    </div>
+
+    <div class="section-title">Tools</div>
+    <div class="tools">
+      <a class="tool-card" href="/admin/intake.html">
+        <span class="tool-icon">+</span>
+        <div class="tool-name">Intake</div>
+        <div class="tool-desc">Add new inventory items with photos, descriptions and pricing</div>
+      </a>
+      <a class="tool-card" href="/admin/ebay.html">
+        <span class="tool-icon">↓</span>
+        <div class="tool-name">eBay import</div>
+        <div class="tool-desc">Pull active listings from your eBay accounts into Archive</div>
+      </a>
+      <a class="tool-card" href="/admin/inbox.html">
+        <span class="tool-icon">✉</span>
+        <div class="tool-name">Inbox</div>
+        <div class="tool-desc">Messages from customers and eBay in one place</div>
+      </a>
+      <a class="tool-card" href="/admin/pos.html">
+        <span class="tool-icon">$</span>
+        <div class="tool-name">Point of sale</div>
+        <div class="tool-desc">Process in-person sales and mark items sold instantly</div>
+      </a>
+    </div>
+
+    <div class="recent-section">
+      <div class="section-title">Recently added</div>
+      <div id="recentItems"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+
+  let db;
+
+  async function init() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+    await db.auth.signOut();
+    showLogin();
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) { setStatus('Please enter your email and password.'); return; }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) { setStatus(error.message); btn.disabled = false; btn.textContent = 'Sign in'; return; }
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+    showAdmin();
+  }
+
+  async function handleLogout() {
+    await db.auth.signOut();
+    showLogin();
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+  }
+
+  function showLogin() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminScreen').style.display = 'none';
+  }
+
+  async function showAdmin() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminScreen').style.display = 'block';
+    await loadStats();
+    await loadRecentItems();
+  }
+
+  async function loadStats() {
+    const { data, error } = await db.from('inventory').select('status, price');
+    if (error) return;
+    const total = data.length;
+    const available = data.filter(i => i.status === 'available').length;
+    const sold = data.filter(i => i.status === 'sold').length;
+    const value = data.filter(i => i.status === 'available').reduce((sum, i) => sum + parseFloat(i.price || 0), 0);
+    document.getElementById('statTotal').textContent = total.toLocaleString();
+    document.getElementById('statAvailable').textContent = available.toLocaleString();
+    document.getElementById('statSold').textContent = sold.toLocaleString();
+    document.getElementById('statValue').textContent = '$' + Math.round(value).toLocaleString();
+    document.getElementById('welcomeSub').textContent = `${available} items available — $${Math.round(value).toLocaleString()} total value`;
+  }
+
+  async function loadRecentItems() {
+    const { data, error } = await db.from('inventory').select('*').order('created_at', { ascending: false }).limit(5);
+    if (error) return;
+    document.getElementById('recentItems').innerHTML = data.map(item => `
+      <div class="inv-item">
+        ${item.image_url ? `<img class="inv-img" src="${item.image_url}" alt="${item.name}">` : `<div class="inv-img-placeholder"></div>`}
+        <div class="inv-info">
+          <div class="inv-name">${item.name}</div>
+          <div class="inv-meta">${item.category}${item.location ? ' · ' + item.location : ''} · ${item.status}</div>
+        </div>
+        <div class="inv-price">$${item.price}</div>
+      </div>
+    `).join('');
+  }
+
+  function setStatus(msg) {
+    document.getElementById('loginStatus').textContent = msg;
+  }
+
+  init();
+</script>
+
+</body>
+</html>
