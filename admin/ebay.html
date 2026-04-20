@@ -196,7 +196,6 @@
 <script>
   const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
-  const EBAY_APP_ID = 'philipwe-archivei-PRD-56c1164ac-a711c0a1';
 
   let db;
 
@@ -216,7 +215,7 @@
       t.includes('reebok') || t.includes('vans') || t.includes('converse') ||
       t.includes('sneaker') || t.includes('shoe') || t.includes('boot') ||
       t.includes('cleat') || t.includes('sandal') || t.includes('footwear') ||
-      t.includes('trainer') || t.includes('retro') && t.includes('air')
+      t.includes('trainer')
     ) return 'Footwear';
 
     if (
@@ -238,9 +237,8 @@
       t.includes('atari') || t.includes('n64') || t.includes('ps1') ||
       t.includes('ps2') || t.includes('ps3') || t.includes('ps4') ||
       t.includes('ps5') || t.includes('gamecube') || t.includes('wii') ||
-      t.includes('switch') && (t.includes('game') || t.includes('nintendo')) ||
       t.includes('cartridge') || t.includes('controller') || t.includes('video game') ||
-      t.includes('rpg') || t.includes('pokemon') && t.includes('game')
+      t.includes('pokemon') || t.includes('rpg')
     ) return 'Video Games';
 
     if (
@@ -250,13 +248,13 @@
       t.includes('teenage mutant') || t.includes('tmnt') || t.includes('star wars') ||
       t.includes('collectible') || t.includes('doll') || t.includes('plush') ||
       t.includes('kenner') || t.includes('hasbro') || t.includes('mattel') ||
-      t.includes('vintage toy') || t.includes('neca') || t.includes('mego')
+      t.includes('neca') || t.includes('mego')
     ) return 'Toys';
 
     if (
       t.includes('headphone') || t.includes('earphone') || t.includes('earbud') ||
       t.includes('airpod') || t.includes('speaker') || t.includes('bose') ||
-      t.includes('sony wh') || t.includes('audio') || t.includes('soundbar') ||
+      t.includes('audio') || t.includes('soundbar') ||
       t.includes('turntable') || t.includes('record player') || t.includes('amplifier')
     ) return 'Audio';
 
@@ -281,28 +279,11 @@
       let hasMore = true;
 
       while (hasMore) {
-       const response = await fetch('/.netlify/functions/ebay-proxy', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ token, page: pageNum })
-    });
-<GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <RequesterCredentials>
-    <eBayAuthToken>${token}</eBayAuthToken>
-  </RequesterCredentials>
-  <ActiveList>
-    <Include>true</Include>
-    <Pagination>
-      <EntriesPerPage>200</EntriesPerPage>
-      <PageNumber>${pageNum}</PageNumber>
-    </Pagination>
-  </ActiveList>
-  <DetailLevel>ReturnAll</DetailLevel>
-</GetMyeBaySellingRequest>`
-          }
-        );
+        const response = await fetch('/.netlify/functions/ebay-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, page: pageNum })
+        });
 
         const text = await response.text();
         const parser = new DOMParser();
@@ -321,8 +302,6 @@
             item.querySelector('SellingStatus CurrentPrice')?.textContent ||
             item.querySelector('BuyItNowPrice')?.textContent || '0'
           );
-          const itemId = item.querySelector('ItemID')?.textContent || '';
-          const ebayCategory = item.querySelector('PrimaryCategory CategoryName')?.textContent || '';
           const condition = item.querySelector('ConditionDisplayName')?.textContent || '';
           const imageUrl =
             item.querySelector('PictureDetails GalleryURL')?.textContent ||
@@ -332,7 +311,7 @@
           const available = quantity - quantitySold;
 
           if (title && price > 0 && available > 0) {
-            allListings.push({ title, price, itemId, ebayCategory, condition, imageUrl, accountName });
+            allListings.push({ title, price, condition, imageUrl, accountName });
           }
         });
 
