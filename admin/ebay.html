@@ -303,6 +303,7 @@
             item.querySelector('BuyItNowPrice')?.textContent || '0'
           );
           const condition = item.querySelector('ConditionDisplayName')?.textContent || '';
+         const itemId = item.querySelector('ItemID')?.textContent || '';
           const imageUrl =
             item.querySelector('PictureDetails GalleryURL')?.textContent ||
             item.querySelector('PictureDetails PictureURL')?.textContent || '';
