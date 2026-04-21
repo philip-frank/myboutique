@@ -364,7 +364,8 @@
           condition: listing.condition,
           image_url: listing.imageUrl || null,
           source: `eBay — ${accountName}`,
-          status: 'available'
+          status: 'available',
+          ebay_item_id: listing.itemId || null
         }]);
 
         if (error) throw error;
