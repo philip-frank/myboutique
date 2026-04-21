@@ -321,8 +321,9 @@
       return;
     }
 
-    allItems = data;
-    renderGrid(currentFilter);
+allItems = data;
+currentPage = 1;
+renderGrid(currentFilter);
   }
 
   function cashappLink(item) {
@@ -330,9 +331,51 @@
     return `https://cash.app/$zapfil/${item.price}?note=${note}`;
   }
 
-  function renderGrid(filterCat) {
+function renderGrid(filterCat) {
     const grid = document.getElementById('grid');
     const filtered = filterCat === 'all' ? allItems : allItems.filter(i => i.category === filterCat);
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="empty">No items found</div>';
+      return;
+    }
+
+    const perPage = 200;
+    const totalPages = Math.ceil(filtered.length / perPage);
+    const start = (currentPage - 1) * perPage;
+    const pageItems = filtered.slice(start, start + perPage);
+
+    grid.innerHTML = pageItems.map(item => `
+      <div class="card">
+        ${item.image_url
+          ? `<img class="card-img" src="${item.image_url}" alt="${item.name}">`
+          : `<div class="card-img-placeholder">${item.category}</div>`
+        }
+        <div class="card-info">
+          <div class="card-category">${item.category}${item.size ? ' &mdash; ' + item.size : ''}</div>
+          <div class="card-name">${item.name}</div>
+          <div class="card-price">$${item.price}</div>
+        </div>
+        <a class="card-buy" href="${cashappLink(item)}" target="_blank">Buy &mdash; $${item.price}</a>
+      </div>
+    `).join('');
+
+    document.getElementById('pagination').innerHTML = totalPages > 1 ? `
+      <div style="text-align:center;padding:40px 0;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
+        ${currentPage > 1 ? `<button class="cat-btn" onclick="changePage(${currentPage - 1})">Previous</button>` : ''}
+        ${Array.from({length: totalPages}, (_, i) => `
+          <button class="cat-btn ${i + 1 === currentPage ? 'active' : ''}" onclick="changePage(${i + 1})">${i + 1}</button>
+        `).join('')}
+        ${currentPage < totalPages ? `<button class="cat-btn" onclick="changePage(${currentPage + 1})">Next</button>` : ''}
+      </div>
+    ` : '';
+  }
+
+  function changePage(page) {
+    currentPage = page;
+    renderGrid(currentFilter);
+    window.scrollTo(0, 0);
+  }
 
     if (filtered.length === 0) {
       grid.innerHTML = '<div class="empty">No items found</div>';
