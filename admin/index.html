@@ -393,7 +393,7 @@
   }
 
   async function loadStats() {
-    const { data, error } = await db.from('inventory').select('status, price');
+    const { data, error } = await db.from('inventory').select('status, price', { count: 'exact' }).limit(10000);
     if (error) return;
     const total = data.length;
     const available = data.filter(i => i.status === 'available').length;
