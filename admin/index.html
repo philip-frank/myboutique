@@ -3,246 +3,120 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Archive — Admin</title>
+<title>Archive — eBay Import</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     background: #f9f9f7;
     color: #111;
-    min-height: 100vh;
-  }
-
-  .login-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
     padding: 40px 20px;
-  }
-
-  .login-box { width: 100%; max-width: 380px; }
-
-  .login-logo {
-    font-size: 22px;
-    font-weight: 300;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  .login-sub {
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    opacity: 0.4;
-    margin-bottom: 48px;
-  }
-
-  .login-field { margin-bottom: 16px; }
-
-  .login-label {
-    display: block;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    opacity: 0.5;
-    margin-bottom: 8px;
-  }
-
-  .login-input {
-    width: 100%;
-    padding: 14px 16px;
-    font-size: 15px;
-    font-family: inherit;
-    border: 0.5px solid rgba(0,0,0,0.15);
-    background: #fff;
-    color: #111;
-    border-radius: 2px;
-    outline: none;
-  }
-
-  .login-input:focus { border-color: #111; }
-
-  .login-btn {
-    width: 100%;
-    padding: 16px;
-    font-size: 12px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    background: #111;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    margin-top: 24px;
-    border-radius: 2px;
-    transition: background 0.2s;
-  }
-
-  .login-btn:hover { background: #333; }
-  .login-btn:disabled { background: #999; cursor: not-allowed; }
-
-  .login-status {
-    text-align: center;
-    margin-top: 16px;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    min-height: 20px;
-    color: #c0392b;
-  }
-
-  .admin-screen { display: none; }
-
-  .admin-wrap {
-    padding: 40px;
-    max-width: 900px;
+    max-width: 700px;
     margin: 0 auto;
   }
-
-  .admin-header {
+  header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 60px;
+    margin-bottom: 40px;
     padding-bottom: 20px;
     border-bottom: 0.5px solid rgba(0,0,0,0.1);
   }
-
-  .admin-logo {
-    font-size: 16px;
-    font-weight: 300;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-  }
-
-  .admin-logo span {
-    font-size: 11px;
-    opacity: 0.4;
-    letter-spacing: 0.15em;
-    margin-left: 12px;
-  }
-
-  .admin-actions { display: flex; gap: 20px; align-items: center; }
-
-  .view-site, .logout-btn {
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    text-decoration: none;
-    color: #111;
-    opacity: 0.5;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-  }
-
-  .view-site:hover, .logout-btn:hover { opacity: 1; }
-
-  .welcome {
-    margin-bottom: 48px;
-  }
-
-  .welcome-title {
-    font-size: 28px;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
-  }
-
-  .welcome-sub {
-    font-size: 13px;
-    opacity: 0.4;
-    letter-spacing: 0.05em;
-  }
-
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-bottom: 60px;
-  }
-
-  .stat-card {
-    background: #fff;
-    border: 0.5px solid rgba(0,0,0,0.08);
-    border-radius: 2px;
-    padding: 20px;
-  }
-
-  .stat-num {
-    font-size: 32px;
-    font-weight: 300;
-    margin-bottom: 4px;
-  }
-
-  .stat-label {
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    opacity: 0.4;
-  }
-
+  .logo { font-size: 16px; font-weight: 300; letter-spacing: 0.25em; text-transform: uppercase; }
+  .logo span { font-size: 11px; opacity: 0.4; letter-spacing: 0.15em; margin-left: 12px; }
+  .back { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; color: #111; opacity: 0.5; }
+  .back:hover { opacity: 1; }
   .section-title {
     font-size: 11px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     opacity: 0.4;
     margin-bottom: 20px;
+    margin-top: 40px;
   }
-
-  .tools {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
-    margin-bottom: 60px;
-  }
-
-  .tool-card {
-    background: #fff;
-    border: 0.5px solid rgba(0,0,0,0.08);
-    border-radius: 2px;
-    padding: 24px;
-    text-decoration: none;
-    color: #111;
-    transition: border-color 0.2s;
+  .field { margin-bottom: 20px; }
+  label {
     display: block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 8px;
   }
-
-  .tool-card:hover { border-color: #111; }
-
-  .tool-icon {
-    font-size: 24px;
-    margin-bottom: 16px;
-    display: block;
-  }
-
-  .tool-name {
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 14px;
     font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 6px;
-    letter-spacing: 0.05em;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
   }
-
-  .tool-desc {
-    font-size: 12px;
-    opacity: 0.4;
-    line-height: 1.5;
-    letter-spacing: 0.02em;
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #111; }
+  textarea { resize: vertical; min-height: 120px; font-size: 12px; }
+  .btn {
+    padding: 14px 24px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
   }
-
-  .recent-section { margin-bottom: 60px; }
-
-  .inv-item {
+  .btn:hover { background: #333; }
+  .btn:disabled { background: #999; cursor: not-allowed; }
+  .btn-outline {
+    background: none;
+    color: #111;
+    border: 0.5px solid rgba(0,0,0,0.2);
+  }
+  .btn-outline:hover { background: #f0f0ee; }
+  .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+  .status {
+    margin-top: 20px;
+    font-size: 13px;
+    padding: 12px 16px;
+    border-radius: 2px;
+    display: none;
+  }
+  .status.info { display: block; background: #e8f0fe; color: #1a56c4; }
+  .status.success { display: block; background: #e6f4ea; color: #1e6e3a; }
+  .status.error { display: block; background: #fce8e8; color: #c0392b; }
+  .progress { margin-top: 20px; display: none; }
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #111;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-text { font-size: 12px; opacity: 0.5; letter-spacing: 0.05em; }
+  .results {
+    margin-top: 40px;
+    border-top: 0.5px solid rgba(0,0,0,0.1);
+    padding-top: 40px;
+    display: none;
+  }
+  .result-item {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     padding: 12px 0;
     border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    font-size: 13px;
   }
-
-  .inv-img {
+  .result-img {
     width: 40px;
     height: 40px;
     object-fit: cover;
@@ -250,98 +124,73 @@
     background: #eee;
     flex-shrink: 0;
   }
-
-  .inv-img-placeholder {
-    width: 40px;
-    height: 40px;
+  .result-name { flex: 1; line-height: 1.3; }
+  .result-cat { font-size: 11px; opacity: 0.5; white-space: nowrap; margin-right: 8px; }
+  .result-price { opacity: 0.6; white-space: nowrap; }
+  .result-status { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 2px; white-space: nowrap; }
+  .result-status.imported { background: #e6f4ea; color: #1e6e3a; }
+  .result-status.skipped { background: #f0f0ee; color: #666; }
+  .result-status.error { background: #fce8e8; color: #c0392b; }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
     background: #f0f0ee;
     border-radius: 2px;
-    flex-shrink: 0;
+    padding: 16px;
+    text-align: center;
   }
-
-  .inv-info { flex: 1; }
-  .inv-name { font-size: 13px; line-height: 1.3; }
-  .inv-meta { font-size: 11px; opacity: 0.4; margin-top: 2px; }
-  .inv-price { font-size: 13px; font-weight: 300; white-space: nowrap; }
-
-  @media (max-width: 600px) {
-    .admin-wrap { padding: 20px; }
-    .stats { grid-template-columns: repeat(2, 1fr); }
-    .tools { grid-template-columns: 1fr; }
+  .summary-num { font-size: 28px; font-weight: 300; }
+  .summary-label { font-size: 11px; opacity: 0.5; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+  .mapping-note {
+    font-size: 12px;
+    opacity: 0.5;
+    margin-top: 8px;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
   }
 </style>
 </head>
 <body>
 
-<div class="login-screen" id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">Archive</div>
-    <div class="login-sub">Admin — Staff access only</div>
-    <div class="login-field">
-      <label class="login-label">Email</label>
-      <input class="login-input" type="email" id="loginEmail" placeholder="your@email.com">
-    </div>
-    <div class="login-field">
-      <label class="login-label">Password</label>
-      <input class="login-input" type="password" id="loginPassword" placeholder="••••••••">
-    </div>
-    <button class="login-btn" id="loginBtn" onclick="handleLogin()">Sign in</button>
-    <div class="login-status" id="loginStatus"></div>
-  </div>
+<header>
+  <div class="logo">Archive <span>eBay Import</span></div>
+  <a class="back" href="/admin">Back to admin</a>
+</header>
+
+<div class="section-title">Account setup</div>
+
+<div class="field">
+  <label>Account nickname</label>
+  <input type="text" id="accountName" placeholder="e.g. Account 1, Sneakers Account, Main eBay...">
 </div>
 
-<div class="admin-screen" id="adminScreen">
-  <div class="admin-wrap">
-    <div class="admin-header">
-      <div class="admin-logo">Archive <span>Admin</span></div>
-      <div class="admin-actions">
-        <a class="view-site" href="/" target="_blank">View site</a>
-        <button class="logout-btn" onclick="handleLogout()">Sign out</button>
-      </div>
-    </div>
+<div class="field">
+  <label>User token</label>
+  <textarea id="userToken" placeholder="Paste your eBay User Token here..."></textarea>
+</div>
 
-    <div class="welcome">
-      <div class="welcome-title">Good to see you.</div>
-      <div class="welcome-sub" id="welcomeSub">Loading inventory...</div>
-     <button onclick="loadStats();loadRecentItems();" style="margin-top:12px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;background:none;border:0.5px solid rgba(0,0,0,0.15);padding:8px 16px;cursor:pointer;border-radius:2px;">Refresh</button>
-    </div>
+<p class="mapping-note">Categories will be assigned automatically based on listing titles. Unrecognized items will be marked as Uncategorized for bulk editing later.</p>
 
-    <div class="stats" id="stats">
-      <div class="stat-card"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Total items</div></div>
-      <div class="stat-card"><div class="stat-num" id="statAvailable">—</div><div class="stat-label">Available</div></div>
-      <div class="stat-card"><div class="stat-num" id="statSold">—</div><div class="stat-label">Sold</div></div>
-      <div class="stat-card"><div class="stat-num" id="statValue">—</div><div class="stat-label">Total value</div></div>
-    </div>
+<div class="btn-row">
+  <button class="btn" onclick="fetchListings()">Fetch listings</button>
+  <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+</div>
 
-    <div class="section-title">Tools</div>
-    <div class="tools">
-      <a class="tool-card" href="/admin/intake.html">
-        <span class="tool-icon">+</span>
-        <div class="tool-name">Intake</div>
-        <div class="tool-desc">Add new inventory items with photos, descriptions and pricing</div>
-      </a>
-      <a class="tool-card" href="/admin/ebay.html">
-        <span class="tool-icon">↓</span>
-        <div class="tool-name">eBay import</div>
-        <div class="tool-desc">Pull active listings from your eBay accounts into Archive</div>
-      </a>
-      <a class="tool-card" href="/admin/inbox.html">
-        <span class="tool-icon">✉</span>
-        <div class="tool-name">Inbox</div>
-        <div class="tool-desc">Messages from customers and eBay in one place</div>
-      </a>
-      <a class="tool-card" href="/admin/pos.html">
-        <span class="tool-icon">$</span>
-        <div class="tool-name">Point of sale</div>
-        <div class="tool-desc">Process in-person sales and mark items sold instantly</div>
-      </a>
-    </div>
+<div class="status" id="status"></div>
 
-    <div class="recent-section">
-      <div class="section-title">Recently added</div>
-      <div id="recentItems"></div>
-    </div>
-  </div>
+<div class="progress" id="progress">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">Fetching listings...</div>
+</div>
+
+<div class="results" id="results">
+  <div class="section-title">Import results</div>
+  <div class="summary" id="summary"></div>
+  <div id="resultsList"></div>
 </div>
 
 <script>
@@ -352,77 +201,204 @@
 
   async function init() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
-    await db.auth.signOut();
-    showLogin();
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  async function handleLogin() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    if (!email || !password) { setStatus('Please enter your email and password.'); return; }
-    const btn = document.getElementById('loginBtn');
-    btn.disabled = true;
-    btn.textContent = 'Signing in...';
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
-    if (error) { setStatus(error.message); btn.disabled = false; btn.textContent = 'Sign in'; return; }
-    btn.disabled = false;
-    btn.textContent = 'Sign in';
-    showAdmin();
+  function mapCategory(title) {
+    if (!title) return 'Uncategorized';
+    const t = title.toLowerCase();
+    if (
+      t.includes('jordan') || t.includes('nike') || t.includes('adidas') ||
+      t.includes('yeezy') || t.includes('dunk') || t.includes('air max') ||
+      t.includes('air force') || t.includes('new balance') || t.includes('puma') ||
+      t.includes('reebok') || t.includes('vans') || t.includes('converse') ||
+      t.includes('sneaker') || t.includes('shoe') || t.includes('boot') ||
+      t.includes('cleat') || t.includes('sandal') || t.includes('footwear') ||
+      t.includes('trainer')
+    ) return 'Footwear';
+    if (
+      t.includes('supreme') || t.includes('bape') || t.includes('off-white') ||
+      t.includes('palace') || t.includes('stussy') || t.includes('kith') ||
+      t.includes('hoodie') || t.includes('hoody') || t.includes('sweatshirt') ||
+      t.includes('t-shirt') || t.includes('tshirt') || t.includes('tee') ||
+      t.includes('shirt') || t.includes('jacket') || t.includes('coat') ||
+      t.includes('pants') || t.includes('jeans') || t.includes('shorts') ||
+      t.includes('sweater') || t.includes('pullover') || t.includes('vest') ||
+      t.includes('burberry') || t.includes('gucci') || t.includes('louis vuitton') ||
+      t.includes('vintage') || t.includes('band tee') || t.includes('rap tee') ||
+      t.includes('jersey') || t.includes('clothing') || t.includes('apparel')
+    ) return 'Apparel';
+    if (
+      t.includes('nintendo') || t.includes('playstation') || t.includes('xbox') ||
+      t.includes('sega') || t.includes('game boy') || t.includes('gameboy') ||
+      t.includes('atari') || t.includes('n64') || t.includes('ps1') ||
+      t.includes('ps2') || t.includes('ps3') || t.includes('ps4') ||
+      t.includes('ps5') || t.includes('gamecube') || t.includes('wii') ||
+      t.includes('cartridge') || t.includes('controller') || t.includes('video game') ||
+      t.includes('pokemon') || t.includes('rpg')
+    ) return 'Video Games';
+    if (
+      t.includes('toy') || t.includes('action figure') || t.includes('funko') ||
+      t.includes('lego') || t.includes('hot wheels') || t.includes('barbie') ||
+      t.includes('gi joe') || t.includes('transformers') || t.includes('he-man') ||
+      t.includes('teenage mutant') || t.includes('tmnt') || t.includes('star wars') ||
+      t.includes('collectible') || t.includes('doll') || t.includes('plush') ||
+      t.includes('kenner') || t.includes('hasbro') || t.includes('mattel') ||
+      t.includes('neca') || t.includes('mego')
+    ) return 'Toys';
+    if (
+      t.includes('headphone') || t.includes('earphone') || t.includes('earbud') ||
+      t.includes('airpod') || t.includes('speaker') || t.includes('bose') ||
+      t.includes('audio') || t.includes('soundbar') ||
+      t.includes('turntable') || t.includes('record player') || t.includes('amplifier')
+    ) return 'Audio';
+    return 'Uncategorized';
   }
 
-  async function handleLogout() {
-    await db.auth.signOut();
-    showLogin();
-    document.getElementById('loginEmail').value = '';
-    document.getElementById('loginPassword').value = '';
+  async function fetchListings() {
+    const token = document.getElementById('userToken').value.trim();
+    const accountName = document.getElementById('accountName').value.trim() || 'eBay Account';
+    if (!token) { showStatus('Please paste your eBay User Token.', 'error'); return; }
+    showStatus('Connecting to eBay API...', 'info');
+    showProgress(true, 'Fetching your active listings...');
+    try {
+      let allListings = [];
+      let pageNum = 1;
+      let hasMore = true;
+      while (hasMore) {
+        const response = await fetch('/.netlify/functions/ebay-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, page: pageNum })
+        });
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'text/xml');
+        const ack = xml.querySelector('Ack')?.textContent;
+        if (ack !== 'Success' && ack !== 'Warning') {
+          const errMsg = xml.querySelector('ShortMessage')?.textContent || 'Unknown eBay API error';
+          throw new Error(errMsg);
+        }
+        const items = xml.querySelectorAll('ActiveList ItemArray Item');
+        items.forEach(item => {
+          const title = item.querySelector('Title')?.textContent || '';
+          const price = parseFloat(
+            item.querySelector('SellingStatus CurrentPrice')?.textContent ||
+            item.querySelector('BuyItNowPrice')?.textContent || '0'
+          );
+          const condition = item.querySelector('ConditionDisplayName')?.textContent || '';
+          const itemId = item.querySelector('ItemID')?.textContent || '';
+          const imageUrl =
+            item.querySelector('PictureDetails PictureURL')?.textContent ||
+            item.querySelector('PictureDetails GalleryURL')?.textContent || '';
+          const quantity = parseInt(item.querySelector('Quantity')?.textContent || '1');
+          const quantitySold = parseInt(item.querySelector('SellingStatus QuantitySold')?.textContent || '0');
+          const available = quantity - quantitySold;
+          if (title && price > 0 && available > 0) {
+            allListings.push({ title, price, condition, imageUrl, accountName, itemId });
+          }
+        });
+        const totalPages = parseInt(
+          xml.querySelector('ActiveList PaginationResult TotalNumberOfPages')?.textContent || '1'
+        );
+        hasMore = pageNum < totalPages;
+        pageNum++;
+        updateProgress((pageNum / (totalPages + 1)) * 60, `Fetched page ${pageNum - 1} of ${totalPages}...`);
+      }
+      showStatus(`Found ${allListings.length} active listings. Importing to Archive...`, 'info');
+      await importListings(allListings, accountName);
+    } catch (err) {
+      showStatus('Error: ' + err.message, 'error');
+      showProgress(false);
+    }
   }
 
-  function showLogin() {
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('adminScreen').style.display = 'none';
+  async function importListings(listings, accountName) {
+    let imported = 0;
+    let skipped = 0;
+    let errors = 0;
+    const resultItems = [];
+    for (let i = 0; i < listings.length; i++) {
+      const listing = listings[i];
+      updateProgress(60 + ((i / listings.length) * 40), `Importing ${i + 1} of ${listings.length}...`);
+      try {
+        const { data: existing } = await db
+          .from('inventory')
+          .select('id')
+          .eq('name', listing.title)
+          .single();
+        if (existing) {
+          skipped++;
+          resultItems.push({ ...listing, importStatus: 'skipped', assignedCategory: '—' });
+          continue;
+        }
+        const assignedCategory = mapCategory(listing.title);
+        const { error } = await db.from('inventory').insert([{
+          name: listing.title,
+          category: assignedCategory,
+          price: listing.price,
+          condition: listing.condition,
+          image_url: listing.imageUrl || null,
+          source: `eBay — ${accountName}`,
+          status: 'available',
+          ebay_item_id: listing.itemId || null
+        }]);
+        if (error) throw error;
+        imported++;
+        resultItems.push({ ...listing, importStatus: 'imported', assignedCategory });
+      } catch (err) {
+        errors++;
+        resultItems.push({ ...listing, importStatus: 'error', assignedCategory: '—' });
+      }
+    }
+    showProgress(false);
+    showResults(resultItems, imported, skipped, errors);
+    showStatus(`Import complete — ${imported} imported, ${skipped} skipped, ${errors} errors.`, 'success');
   }
 
-  async function showAdmin() {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminScreen').style.display = 'block';
-    await loadStats();
-    await loadRecentItems();
-  }
-
-  async function loadStats() {
-    const { data, error } = await db.from('inventory').select('status, price', { count: 'exact' }).limit(10000);
-    if (error) return;
-    const total = data.length;
-    const available = data.filter(i => i.status === 'available').length;
-    const sold = data.filter(i => i.status === 'sold').length;
-    const value = data.filter(i => i.status === 'available').reduce((sum, i) => sum + parseFloat(i.price || 0), 0);
-    document.getElementById('statTotal').textContent = total.toLocaleString();
-    document.getElementById('statAvailable').textContent = available.toLocaleString();
-    document.getElementById('statSold').textContent = sold.toLocaleString();
-    document.getElementById('statValue').textContent = '$' + Math.round(value).toLocaleString();
-    document.getElementById('welcomeSub').textContent = `${available} items available — $${Math.round(value).toLocaleString()} total value`;
-  }
-
-  async function loadRecentItems() {
-    const { data, error } = await db.from('inventory').select('*').order('created_at', { ascending: false }).limit(10000);
-    if (error) return;
-    document.getElementById('recentItems').innerHTML = data.map(item => `
-      <div class="inv-item">
-        ${item.image_url ? `<img class="inv-img" src="${item.image_url}" alt="${item.name}">` : `<div class="inv-img-placeholder"></div>`}
-        <div class="inv-info">
-          <div class="inv-name">${item.name}</div>
-          <div class="inv-meta">${item.category}${item.location ? ' · ' + item.location : ''} · ${item.status}</div>
-        </div>
-        <div class="inv-price">$${item.price}</div>
+  function showResults(items, imported, skipped, errors) {
+    const resultsEl = document.getElementById('results');
+    resultsEl.style.display = 'block';
+    document.getElementById('summary').innerHTML = `
+      <div class="summary-card"><div class="summary-num">${imported}</div><div class="summary-label">Imported</div></div>
+      <div class="summary-card"><div class="summary-num">${skipped}</div><div class="summary-label">Skipped</div></div>
+      <div class="summary-card"><div class="summary-num">${errors}</div><div class="summary-label">Errors</div></div>
+    `;
+    document.getElementById('resultsList').innerHTML = items.map(item => `
+      <div class="result-item">
+        ${item.imageUrl ? `<img class="result-img" src="${item.imageUrl}" alt="${item.title}">` : `<div class="result-img"></div>`}
+        <div class="result-name">${item.title}</div>
+        <div class="result-cat">${item.assignedCategory}</div>
+        <div class="result-price">$${item.price}</div>
+        <div class="result-status ${item.importStatus}">${item.importStatus}</div>
       </div>
     `).join('');
   }
 
-  function setStatus(msg) {
-    document.getElementById('loginStatus').textContent = msg;
+  function showStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function showProgress(show, text) {
+    const el = document.getElementById('progress');
+    el.style.display = show ? 'block' : 'none';
+    if (text) document.getElementById('progressText').textContent = text;
+    if (!show) updateProgress(0);
+  }
+
+  function updateProgress(pct, text) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    if (text) document.getElementById('progressText').textContent = text;
+  }
+
+  function clearForm() {
+    document.getElementById('accountName').value = '';
+    document.getElementById('userToken').value = '';
+    document.getElementById('status').className = 'status';
+    document.getElementById('results').style.display = 'none';
+    showProgress(false);
   }
 
   init();
