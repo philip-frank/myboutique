@@ -407,7 +407,7 @@
   }
 
   async function loadRecentItems() {
-    const { data, error } = await db.from('inventory').select('*').order('created_at', { ascending: false }).limit(5);
+    const { data, error } = await db.from('inventory').select('*').order('created_at', { ascending: false }).limit(10000);
     if (error) return;
     document.getElementById('recentItems').innerHTML = data.map(item => `
       <div class="inv-item">
