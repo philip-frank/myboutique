@@ -1,1 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — Image Updater</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f9f9f7;
+    color: #111;
+    padding: 40px 20px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+  }
+  .logo { font-size: 16px; font-weight: 300; letter-spacing: 0.25em; text-transform: uppercase; }
+  .logo span { font-size: 11px; opacity: 0.4; letter-spacing: 0.15em; margin-left: 12px; }
+  .back { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; color: #111; opacity: 0.5; }
+  .back:hover { opacity: 1; }
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 20px;
+    margin-top: 40px;
+  }
+  .field { margin-bottom: 20px; }
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+  textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 12px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+    resize: vertical;
+    min-height: 120px;
+  }
+  textarea:focus { outline: none; border-color: #111; }
+  .btn {
+    padding: 14px 24px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #333; }
+  .btn:disabled { background: #999; cursor: not-allowed; }
+  .btn-outline {
+    background: none;
+    color: #111;
+    border: 0.5px solid rgba(0,0,0,0.2);
+  }
+  .btn-outline:hover { background: #f0f0ee; }
+  .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+  .status {
+    margin-top: 20px;
+    font-size: 13px;
+    padding: 12px 16px;
+    border-radius: 2px;
+    display: none;
+  }
+  .status.info { display: block; background: #e8f0fe; color: #1a56c4; }
+  .status.success { display: block; background: #e6f4ea; color: #1e6e3a; }
+  .status.error { display: block; background: #fce8e8; color: #c0392b; }
+  .progress { margin-top: 20px; display: none; }
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #111;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-text { font-size: 12px; opacity: 0.5; letter-spacing: 0.05em; }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 40px;
+    display: none;
+  }
+  .summary-card {
+    background: #f0f0ee;
+    border-radius: 2px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-num { font-size: 28px; font-weight: 300; }
+  .summary-label { font-size: 11px; opacity: 0.5; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+  .note {
+    font-size: 12px;
+    opacity: 0.5;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
 
+<header>
+  <div class="logo">Archive <span>Image Updater</span></div>
+  <a class="back" href="/admin">Back to admin</a>
+</header>
+
+<div class="section-title">Update image quality</div>
+
+<div class="field">
+  <label>eBay User Token</label>
+  <textarea id="userToken" placeholder="Paste your eBay User Token here..."></textarea>
+</div>
+
+<p class="note">This tool fetches full resolution images from eBay for all imported items that have an eBay item ID stored. Run this once per account using that account's token. Items without an eBay item ID will be skipped.</p>
+
+<div class="btn-row">
+  <button class="btn" id="startBtn" onclick="startUpdate()">Start image update</button>
+  <button class="btn btn-outline" onclick="document.getElementById('userToken').value=''">Clear</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="progress" id="progress">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">Starting...</div>
+</div>
+
+<div class="summary" id="summary">
+  <div class="summary-card"><div class="summary-num" id="sumUpdated">0</div><div class="summary-label">Updated</div></div>
+  <div class="summary-card"><div class="summary-num" id="sumSkipped">0</div><div class="summary-label">Skipped</div></div>
+  <div class="summary-card"><div class="summary-num" id="sumErrors">0</div><div class="summary-label">Errors</div></div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+
+  let db;
+
+  async function init() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
+  async function startUpdate() {
+    const token = document.getElementById('userToken').value.trim();
+    if (!token) { showStatus('Please paste your eBay User Token.', 'error'); return; }
+
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true;
+    btn.textContent = 'Running...';
+
+    showStatus('Loading items from database...', 'info');
+
+    const { data: items, error } = await db
+      .from('inventory')
+      .select('id, name, ebay_item_id')
+      .not('ebay_item_id', 'is', null)
+      .limit(10000);
+
+    if (error) {
+      showStatus('Error loading inventory: ' + error.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Start image update';
+      return;
+    }
+
+    showStatus(`Found ${items.length} items with eBay IDs. Fetching full resolution images...`, 'info');
+    document.getElementById('progress').style.display = 'block';
+    document.getElementById('summary').style.display = 'grid';
+
+    let updated = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      updateProgress(((i + 1) / items.length) * 100, `Processing ${i + 1} of ${items.length} — ${item.name.substring(0, 40)}...`);
+
+      try {
+        await new Promise(r => setTimeout(r, 200));
+
+        const response = await fetch('/.netlify/functions/ebay-getitem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, itemId: item.ebay_item_id })
+        });
+
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'text/xml');
+
+        const ack = xml.querySelector('Ack')?.textContent;
+        if (ack !== 'Success' && ack !== 'Warning') {
+          skipped++;
+          updateSummary(updated, skipped, errors);
+          continue;
+        }
+
+        const pictureUrls = xml.querySelectorAll('Item PictureDetails PictureURL');
+        if (pictureUrls.length === 0) {
+          skipped++;
+          updateSummary(updated, skipped, errors);
+          continue;
+        }
+
+        const bestImage = pictureUrls[0].textContent;
+
+        const { error: updateError } = await db
+          .from('inventory')
+          .update({ image_url: bestImage })
+          .eq('id', item.id);
+
+        if (updateError) throw updateError;
+        updated++;
+        updateSummary(updated, skipped, errors);
+
+      } catch (err) {
+        errors++;
+        updateSummary(updated, skipped, errors);
+      }
+    }
+
+    showStatus(`Complete — ${updated} updated, ${skipped} skipped, ${errors} errors.`, 'success');
+    document.getElementById('progress').style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = 'Start image update';
+  }
+
+  function updateProgress(pct, text) {
+    document.getElementById('progressFill').style.width = Math.round(pct) + '%';
+    document.getElementById('progressText').textContent = text;
+  }
+
+  function updateSummary(updated, skipped, errors) {
+    document.getElementById('sumUpdated').textContent = updated;
+    document.getElementById('sumSkipped').textContent = skipped;
+    document.getElementById('sumErrors').textContent = errors;
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  init();
+</script>
+
+</body>
+</html>
