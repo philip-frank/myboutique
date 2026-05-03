@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — Order Sync</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f9f9f7;
+    color: #111;
+    padding: 40px 20px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+  }
+  .logo { font-size: 16px; font-weight: 300; letter-spacing: 0.25em; text-transform: uppercase; }
+  .logo span { font-size: 11px; opacity: 0.4; letter-spacing: 0.15em; margin-left: 12px; }
+  .back { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; color: #111; opacity: 0.5; }
+  .back:hover { opacity: 1; }
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 20px;
+    margin-top: 40px;
+  }
+  .field { margin-bottom: 20px; }
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+  textarea, select {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+  }
+  textarea { resize: vertical; min-height: 120px; font-size: 12px; }
+  textarea:focus, select:focus { outline: none; border-color: #111; }
+  .btn {
+    padding: 14px 24px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #333; }
+  .btn:disabled { background: #999; cursor: not-allowed; }
+  .btn-outline {
+    background: none;
+    color: #111;
+    border: 0.5px solid rgba(0,0,0,0.2);
+  }
+  .btn-outline:hover { background: #f0f0ee; }
+  .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+  .status {
+    margin-top: 20px;
+    font-size: 13px;
+    padding: 12px 16px;
+    border-radius: 2px;
+    display: none;
+  }
+  .status.info { display: block; background: #e8f0fe; color: #1a56c4; }
+  .status.success { display: block; background: #e6f4ea; color: #1e6e3a; }
+  .status.error { display: block; background: #fce8e8; color: #c0392b; }
+  .progress { margin-top: 20px; display: none; }
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #111;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-text { font-size: 12px; opacity: 0.5; letter-spacing: 0.05em; }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 32px;
+    display: none;
+  }
+  .summary-card {
+    background: #f0f0ee;
+    border-radius: 2px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-num { font-size: 28px; font-weight: 300; }
+  .summary-label { font-size: 11px; opacity: 0.5; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+  .orders-list { margin-top: 40px; display: none; }
+  .order-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    font-size: 13px;
+  }
+  .order-img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 2px;
+    background: #eee;
+    flex-shrink: 0;
+  }
+  .order-img-placeholder {
+    width: 40px;
+    height: 40px;
+    background: #f0f0ee;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .order-info { flex: 1; }
+  .order-name { font-size: 13px; line-height: 1.3; }
+  .order-meta { font-size: 11px; opacity: 0.4; margin-top: 2px; }
+  .order-price { font-size: 13px; font-weight: 300; white-space: nowrap; }
+  .order-badge {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .order-badge.marked { background: #e6f4ea; color: #1e6e3a; }
+  .order-badge.notfound { background: #f0f0ee; color: #666; }
+  .order-badge.error { background: #fce8e8; color: #c0392b; }
+  .note {
+    font-size: 12px;
+    opacity: 0.5;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Archive <span>Order Sync</span></div>
+  <a class="back" href="/admin">Back to admin</a>
+</header>
+
+<div class="section-title">Sync eBay orders</div>
+
+<div class="field">
+  <label>eBay User Token</label>
+  <textarea id="userToken" placeholder="Paste your eBay User Token here..."></textarea>
+</div>
+
+<div class="field">
+  <label>Look back</label>
+  <select id="daysBack">
+    <option value="7">Last 7 days</option>
+    <option value="14">Last 14 days</option>
+    <option value="30" selected>Last 30 days</option>
+    <option value="60">Last 60 days</option>
+    <option value="90">Last 90 days</option>
+  </select>
+</div>
+
+<p class="note">This tool pulls completed eBay orders and marks matching items as sold in Archive. It matches by eBay item ID. Run once per account using that account's token.</p>
+
+<div class="btn-row">
+  <button class="btn" id="syncBtn" onclick="startSync()">Sync orders</button>
+  <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="progress" id="progress">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">Fetching orders...</div>
+</div>
+
+<div class="summary" id="summary">
+  <div class="summary-card"><div class="summary-num" id="sumMarked">0</div><div class="summary-label">Marked sold</div></div>
+  <div class="summary-card"><div class="summary-num" id="sumNotFound">0</div><div class="summary-label">Not found</div></div>
+  <div class="summary-card"><div class="summary-num" id="sumErrors">0</div><div class="summary-label">Errors</div></div>
+</div>
+
+<div class="orders-list" id="ordersList"></div>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+
+  let db;
+
+  async function init() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
+  async function startSync() {
+    const token = document.getElementById('userToken').value.trim();
+    const daysBack = parseInt(document.getElementById('daysBack').value);
+    if (!token) { showStatus('Please paste your eBay User Token.', 'error'); return; }
+
+    const btn = document.getElementById('syncBtn');
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+
+    showStatus('Fetching completed orders from eBay...', 'info');
+    document.getElementById('progress').style.display = 'block';
+    document.getElementById('summary').style.display = 'grid';
+    document.getElementById('ordersList').style.display = 'block';
+    updateProgress(10, 'Connecting to eBay...');
+
+    try {
+      const response = await fetch('/.netlify/functions/ebay-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, daysBack })
+      });
+
+      const text = await response.text();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, 'text/xml');
+
+      const ack = xml.querySelector('Ack')?.textContent;
+      if (ack !== 'Success' && ack !== 'Warning') {
+        const errMsg = xml.querySelector('ShortMessage')?.textContent || 'Unknown eBay API error';
+        throw new Error(errMsg);
+      }
+
+      const orders = xml.querySelectorAll('OrderArray Order');
+      updateProgress(30, `Found ${orders.length} completed orders. Processing...`);
+
+      if (orders.length === 0) {
+        showStatus('No completed orders found in this time range.', 'info');
+        document.getElementById('progress').style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = 'Sync orders';
+        return;
+      }
+
+      // Extract all sold item IDs from orders
+      const soldItems = [];
+      orders.forEach(order => {
+        const transactions = order.querySelectorAll('TransactionArray Transaction');
+        transactions.forEach(transaction => {
+          const itemId = transaction.querySelector('Item ItemID')?.textContent;
+          const title = transaction.querySelector('Item Title')?.textContent;
+          const price = transaction.querySelector('TransactionPrice')?.textContent;
+          const buyerName = order.querySelector('BuyerUserID')?.textContent;
+          const saleDate = order.querySelector('CreatedTime')?.textContent;
+          if (itemId) {
+            soldItems.push({ itemId, title, price, buyerName, saleDate });
+          }
+        });
+      });
+
+      showStatus(`Found ${soldItems.length} sold items. Updating Archive...`, 'info');
+      updateProgress(50, `Marking ${soldItems.length} items as sold...`);
+
+      let marked = 0;
+      let notFound = 0;
+      let errors = 0;
+      const results = [];
+
+      for (let i = 0; i < soldItems.length; i++) {
+        const sold = soldItems[i];
+        updateProgress(50 + ((i / soldItems.length) * 50), `Processing ${i + 1} of ${soldItems.length}...`);
+
+        try {
+          // Find item in Archive by ebay_item_id
+          const { data: existing, error: findError } = await db
+            .from('inventory')
+            .select('id, name, image_url, price, status')
+            .eq('ebay_item_id', sold.itemId)
+            .single();
+
+          if (findError || !existing) {
+            notFound++;
+            results.push({ ...sold, result: 'notfound', archiveName: sold.title });
+            updateSummary(marked, notFound, errors);
+            continue;
+          }
+
+          // Skip if already marked sold
+          if (existing.status === 'sold') {
+            notFound++;
+            results.push({ ...sold, result: 'notfound', archiveName: existing.name, note: 'already sold' });
+            updateSummary(marked, notFound, errors);
+            continue;
+          }
+
+          // Mark as sold
+          const { error: updateError } = await db
+            .from('inventory')
+            .update({ status: 'sold' })
+            .eq('id', existing.id);
+
+          if (updateError) throw updateError;
+
+          marked++;
+          results.push({ ...sold, result: 'marked', archiveName: existing.name, imageUrl: existing.image_url });
+          updateSummary(marked, notFound, errors);
+
+        } catch (err) {
+          errors++;
+          results.push({ ...sold, result: 'error', archiveName: sold.title });
+          updateSummary(marked, notFound, errors);
+        }
+      }
+
+      // Render results
+      document.getElementById('ordersList').innerHTML = `
+        <div class="section-title">Results</div>
+        ${results.map(r => `
+          <div class="order-item">
+            ${r.imageUrl
+              ? `<img class="order-img" src="${r.imageUrl}" alt="${r.archiveName}">`
+              : `<div class="order-img-placeholder"></div>`
+            }
+            <div class="order-info">
+              <div class="order-name">${r.archiveName || r.title || 'Unknown item'}</div>
+              <div class="order-meta">eBay ID: ${r.itemId}${r.note ? ' · ' + r.note : ''}</div>
+            </div>
+            <div class="order-price">$${parseFloat(r.price || 0).toFixed(2)}</div>
+            <div class="order-badge ${r.result}">${r.result === 'marked' ? 'Marked sold' : r.result === 'notfound' ? 'Not found' : 'Error'}</div>
+          </div>
+        `).join('')}
+      `;
+
+      document.getElementById('progress').style.display = 'none';
+      showStatus(`Sync complete — ${marked} marked sold, ${notFound} not found in Archive, ${errors} errors.`, 'success');
+
+    } catch (err) {
+      showStatus('Error: ' + err.message, 'error');
+      document.getElementById('progress').style.display = 'none';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Sync orders';
+  }
+
+  function updateProgress(pct, text) {
+    document.getElementById('progressFill').style.width = Math.round(pct) + '%';
+    document.getElementById('progressText').textContent = text;
+  }
+
+  function updateSummary(marked, notFound, errors) {
+    document.getElementById('sumMarked').textContent = marked;
+    document.getElementById('sumNotFound').textContent = notFound;
+    document.getElementById('sumErrors').textContent = errors;
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function clearForm() {
+    document.getElementById('userToken').value = '';
+    document.getElementById('status').className = 'status';
+    document.getElementById('progress').style.display = 'none';
+    document.getElementById('summary').style.display = 'none';
+    document.getElementById('ordersList').style.display = 'none';
+    document.getElementById('ordersList').innerHTML = '';
+    updateProgress(0, '');
+    updateSummary(0, 0, 0);
+  }
+
+  init();
+</script>
+
+</body>
+</html>
