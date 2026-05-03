@@ -103,11 +103,10 @@
   }
   .progress-text { font-size: 12px; opacity: 0.5; letter-spacing: 0.05em; }
   .summary {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-top: 32px;
-    display: none;
   }
   .summary-card {
     background: #f0f0ee;
@@ -265,7 +264,6 @@
         return;
       }
 
-      // Extract all sold item IDs from orders
       const soldItems = [];
       orders.forEach(order => {
         const transactions = order.querySelectorAll('TransactionArray Transaction');
@@ -294,7 +292,6 @@
         updateProgress(50 + ((i / soldItems.length) * 50), `Processing ${i + 1} of ${soldItems.length}...`);
 
         try {
-          // Find item in Archive by ebay_item_id
           const { data: existing, error: findError } = await db
             .from('inventory')
             .select('id, name, image_url, price, status')
@@ -308,7 +305,6 @@
             continue;
           }
 
-          // Skip if already marked sold
           if (existing.status === 'sold') {
             notFound++;
             results.push({ ...sold, result: 'notfound', archiveName: existing.name, note: 'already sold' });
@@ -316,7 +312,6 @@
             continue;
           }
 
-          // Mark as sold
           const { error: updateError } = await db
             .from('inventory')
             .update({ status: 'sold' })
@@ -335,7 +330,6 @@
         }
       }
 
-      // Render results
       document.getElementById('ordersList').innerHTML = `
         <div class="section-title">Results</div>
         ${results.map(r => `
