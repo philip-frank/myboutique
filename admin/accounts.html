@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — eBay Accounts</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f9f9f7;
+    color: #111;
+    padding: 40px 20px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+  }
+  .logo { font-size: 16px; font-weight: 300; letter-spacing: 0.25em; text-transform: uppercase; }
+  .logo span { font-size: 11px; opacity: 0.4; letter-spacing: 0.15em; margin-left: 12px; }
+  .back { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; color: #111; opacity: 0.5; }
+  .back:hover { opacity: 1; }
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 20px;
+    margin-top: 40px;
+  }
+  .field { margin-bottom: 16px; }
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+  input, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+  }
+  input:focus, textarea:focus { outline: none; border-color: #111; }
+  textarea { resize: vertical; min-height: 100px; font-size: 12px; }
+  .btn {
+    padding: 12px 20px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #333; }
+  .btn:disabled { background: #999; cursor: not-allowed; }
+  .btn-outline {
+    background: none;
+    color: #111;
+    border: 0.5px solid rgba(0,0,0,0.2);
+  }
+  .btn-outline:hover { background: #f0f0ee; }
+  .btn-danger {
+    background: none;
+    color: #c0392b;
+    border: 0.5px solid rgba(192,57,43,0.3);
+  }
+  .btn-danger:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+  .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+  .status {
+    margin-top: 16px;
+    font-size: 13px;
+    padding: 12px 16px;
+    border-radius: 2px;
+    display: none;
+  }
+  .status.info { display: block; background: #e8f0fe; color: #1a56c4; }
+  .status.success { display: block; background: #e6f4ea; color: #1e6e3a; }
+  .status.error { display: block; background: #fce8e8; color: #c0392b; }
+  .accounts-list { margin-top: 8px; }
+  .account-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 0.5px solid rgba(0,0,0,0.06);
+  }
+  .account-info { flex: 1; }
+  .account-name { font-size: 14px; font-weight: 500; letter-spacing: 0.05em; }
+  .account-meta { font-size: 11px; opacity: 0.4; margin-top: 4px; letter-spacing: 0.05em; }
+  .account-token {
+    font-size: 11px;
+    opacity: 0.3;
+    margin-top: 4px;
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+  .account-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .empty {
+    text-align: center;
+    padding: 40px 0;
+    font-size: 13px;
+    opacity: 0.4;
+    letter-spacing: 0.05em;
+  }
+  .add-form {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 24px;
+    margin-top: 8px;
+    display: none;
+  }
+  .add-form.visible { display: block; }
+  .form-title {
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 20px;
+  }
+  .note {
+    font-size: 12px;
+    opacity: 0.4;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Archive <span>eBay Accounts</span></div>
+  <a class="back" href="/admin">Back to admin</a>
+</header>
+
+<div class="section-title">Saved accounts</div>
+<div class="accounts-list" id="accountsList">
+  <div class="empty">Loading...</div>
+</div>
+
+<div style="margin-top: 24px;">
+  <button class="btn btn-outline" onclick="toggleAddForm()">+ Add account</button>
+</div>
+
+<div class="add-form" id="addForm">
+  <div class="form-title" id="formTitle">Add new account</div>
+  <div class="field">
+    <label>Account nickname</label>
+    <input type="text" id="nickname" placeholder="e.g. Little Giant, Sneakers Account...">
+  </div>
+  <div class="field">
+    <label>eBay User Token</label>
+    <textarea id="token" placeholder="Paste your eBay User Token here..."></textarea>
+  </div>
+  <p class="note">Tokens are stored securely in your Supabase database and only accessible behind admin login. eBay tokens typically last 18 months.</p>
+  <div class="btn-row" style="margin-top: 20px;">
+    <button class="btn" id="saveBtn" onclick="saveAccount()">Save account</button>
+    <button class="btn btn-outline" onclick="cancelForm()">Cancel</button>
+  </div>
+  <div class="status" id="formStatus"></div>
+</div>
+
+<div class="status" id="pageStatus"></div>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+
+  let db;
+  let editingId = null;
+
+  async function init() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    await loadAccounts();
+  }
+
+  async function loadAccounts() {
+    const { data, error } = await db
+      .from('ebay_accounts')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      document.getElementById('accountsList').innerHTML = '<div class="empty">Error loading accounts.</div>';
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      document.getElementById('accountsList').innerHTML = '<div class="empty">No accounts saved yet.</div>';
+      return;
+    }
+
+    document.getElementById('accountsList').innerHTML = data.map(account => `
+      <div class="account-item" id="account-${account.id}">
+        <div class="account-info">
+          <div class="account-name">${account.nickname}</div>
+          <div class="account-meta">Added ${new Date(account.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+          <div class="account-token">${account.token.substring(0, 40)}...</div>
+        </div>
+        <div class="account-actions">
+          <button class="btn btn-outline" onclick="editAccount('${account.id}', '${account.nickname.replace(/'/g, "\\'")}', \`${account.token}\`)">Edit</button>
+          <button class="btn btn-danger" onclick="deleteAccount('${account.id}', '${account.nickname.replace(/'/g, "\\'")}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleAddForm() {
+    editingId = null;
+    document.getElementById('formTitle').textContent = 'Add new account';
+    document.getElementById('nickname').value = '';
+    document.getElementById('token').value = '';
+    document.getElementById('saveBtn').textContent = 'Save account';
+    document.getElementById('formStatus').className = 'status';
+    const form = document.getElementById('addForm');
+    form.classList.toggle('visible');
+    if (form.classList.contains('visible')) {
+      document.getElementById('nickname').focus();
+    }
+  }
+
+  function editAccount(id, nickname, token) {
+    editingId = id;
+    document.getElementById('formTitle').textContent = 'Edit account';
+    document.getElementById('nickname').value = nickname;
+    document.getElementById('token').value = token;
+    document.getElementById('saveBtn').textContent = 'Update account';
+    document.getElementById('formStatus').className = 'status';
+    const form = document.getElementById('addForm');
+    form.classList.add('visible');
+    form.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function cancelForm() {
+    editingId = null;
+    document.getElementById('addForm').classList.remove('visible');
+    document.getElementById('nickname').value = '';
+    document.getElementById('token').value = '';
+    document.getElementById('formStatus').className = 'status';
+  }
+
+  async function saveAccount() {
+    const nickname = document.getElementById('nickname').value.trim();
+    const token = document.getElementById('token').value.trim();
+
+    if (!nickname || !token) {
+      showFormStatus('Please enter both a nickname and a token.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = editingId ? 'Updating...' : 'Saving...';
+
+    try {
+      if (editingId) {
+        const { error } = await db
+          .from('ebay_accounts')
+          .update({ nickname, token })
+          .eq('id', editingId);
+        if (error) throw error;
+        showFormStatus('Account updated.', 'success');
+      } else {
+        const { error } = await db
+          .from('ebay_accounts')
+          .insert([{ nickname, token }]);
+        if (error) throw error;
+        showFormStatus('Account saved.', 'success');
+      }
+
+      await loadAccounts();
+      setTimeout(() => cancelForm(), 1200);
+
+    } catch (err) {
+      showFormStatus('Error: ' + err.message, 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = editingId ? 'Update account' : 'Save account';
+  }
+
+  async function deleteAccount(id, nickname) {
+    if (!confirm(`Delete "${nickname}"? This cannot be undone.`)) return;
+
+    const { error } = await db
+      .from('ebay_accounts')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      showPageStatus('Error deleting account: ' + error.message, 'error');
+      return;
+    }
+
+    await loadAccounts();
+    showPageStatus(`"${nickname}" removed.`, 'success');
+  }
+
+  function showFormStatus(msg, type) {
+    const el = document.getElementById('formStatus');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function showPageStatus(msg, type) {
+    const el = document.getElementById('pageStatus');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  init();
+</script>
+
+</body>
+</html>
