@@ -43,7 +43,7 @@
     opacity: 0.5;
     margin-bottom: 8px;
   }
-  textarea, select {
+  select {
     width: 100%;
     padding: 12px 14px;
     font-size: 14px;
@@ -53,8 +53,7 @@
     color: #111;
     border-radius: 2px;
   }
-  textarea { resize: vertical; min-height: 120px; font-size: 12px; }
-  textarea:focus, select:focus { outline: none; border-color: #111; }
+  select:focus { outline: none; border-color: #111; }
   .btn {
     padding: 14px 24px;
     font-size: 11px;
@@ -75,7 +74,7 @@
     border: 0.5px solid rgba(0,0,0,0.2);
   }
   .btn-outline:hover { background: #f0f0ee; }
-  .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+  .btn-row { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
   .status {
     margin-top: 20px;
     font-size: 13px;
@@ -155,11 +154,28 @@
   .order-badge.marked { background: #e6f4ea; color: #1e6e3a; }
   .order-badge.notfound { background: #f0f0ee; color: #666; }
   .order-badge.error { background: #fce8e8; color: #c0392b; }
+  .account-header {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    padding: 16px 0 8px;
+    margin-top: 8px;
+    border-top: 0.5px solid rgba(0,0,0,0.06);
+  }
   .note {
     font-size: 12px;
     opacity: 0.5;
     line-height: 1.6;
     margin-top: 8px;
+  }
+  .no-accounts {
+    background: #fce8e8;
+    color: #c0392b;
+    padding: 12px 16px;
+    border-radius: 2px;
+    font-size: 13px;
+    display: none;
   }
 </style>
 </head>
@@ -172,9 +188,15 @@
 
 <div class="section-title">Sync eBay orders</div>
 
-<div class="field">
-  <label>eBay User Token</label>
-  <textarea id="userToken" placeholder="Paste your eBay User Token here..."></textarea>
+<div class="no-accounts" id="noAccounts">
+  No saved accounts found. <a href="/admin/accounts.html" style="color:inherit;font-weight:500;">Add accounts →</a>
+</div>
+
+<div class="field" id="accountField">
+  <label>Account</label>
+  <select id="accountSelect">
+    <option value="">Loading accounts...</option>
+  </select>
 </div>
 
 <div class="field">
@@ -188,11 +210,12 @@
   </select>
 </div>
 
-<p class="note">This tool pulls completed eBay orders and marks matching items as sold in Archive. It matches by eBay item ID. Run once per account using that account's token.</p>
+<p class="note">Matches completed eBay orders to Archive inventory by eBay item ID and marks them as sold. Run per account or sync all at once.</p>
 
 <div class="btn-row">
-  <button class="btn" id="syncBtn" onclick="startSync()">Sync orders</button>
-  <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+  <button class="btn" id="syncOneBtn" onclick="syncOne()">Sync selected account</button>
+  <button class="btn" id="syncAllBtn" onclick="syncAll()">Sync all accounts</button>
+  <button class="btn btn-outline" onclick="clearResults()">Clear</button>
 </div>
 
 <div class="status" id="status"></div>
@@ -215,149 +238,193 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
 
   let db;
+  let savedAccounts = [];
+  let totalMarked = 0;
+  let totalNotFound = 0;
+  let totalErrors = 0;
 
   async function init() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    await loadAccounts();
   }
 
-  async function startSync() {
-    const token = document.getElementById('userToken').value.trim();
+  async function loadAccounts() {
+    const { data, error } = await db
+      .from('ebay_accounts')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error || !data || data.length === 0) {
+      document.getElementById('noAccounts').style.display = 'block';
+      document.getElementById('accountField').style.display = 'none';
+      document.getElementById('syncOneBtn').disabled = true;
+      document.getElementById('syncAllBtn').disabled = true;
+      return;
+    }
+
+    savedAccounts = data;
+    const select = document.getElementById('accountSelect');
+    select.innerHTML = data.map(a => `<option value="${a.id}">${a.nickname}</option>`).join('');
+  }
+
+  async function syncOne() {
+    const accountId = document.getElementById('accountSelect').value;
+    const account = savedAccounts.find(a => a.id === accountId);
+    if (!account) { showStatus('Please select an account.', 'error'); return; }
+    resetResults();
+    await runSync([account]);
+  }
+
+  async function syncAll() {
+    if (savedAccounts.length === 0) { showStatus('No saved accounts found.', 'error'); return; }
+    resetResults();
+    await runSync(savedAccounts);
+  }
+
+  async function runSync(accounts) {
     const daysBack = parseInt(document.getElementById('daysBack').value);
-    if (!token) { showStatus('Please paste your eBay User Token.', 'error'); return; }
+    const syncOneBtn = document.getElementById('syncOneBtn');
+    const syncAllBtn = document.getElementById('syncAllBtn');
+    syncOneBtn.disabled = true;
+    syncAllBtn.disabled = true;
 
-    const btn = document.getElementById('syncBtn');
-    btn.disabled = true;
-    btn.textContent = 'Syncing...';
-
-    showStatus('Fetching completed orders from eBay...', 'info');
     document.getElementById('progress').style.display = 'block';
     document.getElementById('summary').style.display = 'grid';
     document.getElementById('ordersList').style.display = 'block';
-    updateProgress(10, 'Connecting to eBay...');
 
-    try {
-      const response = await fetch('/.netlify/functions/ebay-orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, daysBack })
-      });
+    showStatus(`Syncing ${accounts.length} account${accounts.length > 1 ? 's' : ''}...`, 'info');
 
-      const text = await response.text();
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(text, 'text/xml');
+    for (let a = 0; a < accounts.length; a++) {
+      const account = accounts[a];
+      updateProgress(
+        (a / accounts.length) * 100,
+        `Fetching orders for ${account.nickname} (${a + 1} of ${accounts.length})...`
+      );
 
-      const ack = xml.querySelector('Ack')?.textContent;
-      if (ack !== 'Success' && ack !== 'Warning') {
-        const errMsg = xml.querySelector('ShortMessage')?.textContent || 'Unknown eBay API error';
-        throw new Error(errMsg);
-      }
-
-      const orders = xml.querySelectorAll('OrderArray Order');
-      updateProgress(30, `Found ${orders.length} completed orders. Processing...`);
-
-      if (orders.length === 0) {
-        showStatus('No completed orders found in this time range.', 'info');
-        document.getElementById('progress').style.display = 'none';
-        btn.disabled = false;
-        btn.textContent = 'Sync orders';
-        return;
-      }
-
-      const soldItems = [];
-      orders.forEach(order => {
-        const transactions = order.querySelectorAll('TransactionArray Transaction');
-        transactions.forEach(transaction => {
-          const itemId = transaction.querySelector('Item ItemID')?.textContent;
-          const title = transaction.querySelector('Item Title')?.textContent;
-          const price = transaction.querySelector('TransactionPrice')?.textContent;
-          const buyerName = order.querySelector('BuyerUserID')?.textContent;
-          const saleDate = order.querySelector('CreatedTime')?.textContent;
-          if (itemId) {
-            soldItems.push({ itemId, title, price, buyerName, saleDate });
-          }
+      try {
+        const response = await fetch('/.netlify/functions/ebay-orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: account.token, daysBack })
         });
-      });
 
-      showStatus(`Found ${soldItems.length} sold items. Updating Archive...`, 'info');
-      updateProgress(50, `Marking ${soldItems.length} items as sold...`);
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'text/xml');
 
-      let marked = 0;
-      let notFound = 0;
-      let errors = 0;
-      const results = [];
-
-      for (let i = 0; i < soldItems.length; i++) {
-        const sold = soldItems[i];
-        updateProgress(50 + ((i / soldItems.length) * 50), `Processing ${i + 1} of ${soldItems.length}...`);
-
-        try {
-          const { data: existing, error: findError } = await db
-            .from('inventory')
-            .select('id, name, image_url, price, status')
-            .eq('ebay_item_id', sold.itemId)
-            .single();
-
-          if (findError || !existing) {
-            notFound++;
-            results.push({ ...sold, result: 'notfound', archiveName: sold.title });
-            updateSummary(marked, notFound, errors);
-            continue;
-          }
-
-          if (existing.status === 'sold') {
-            notFound++;
-            results.push({ ...sold, result: 'notfound', archiveName: existing.name, note: 'already sold' });
-            updateSummary(marked, notFound, errors);
-            continue;
-          }
-
-          const { error: updateError } = await db
-            .from('inventory')
-            .update({ status: 'sold' })
-            .eq('id', existing.id);
-
-          if (updateError) throw updateError;
-
-          marked++;
-          results.push({ ...sold, result: 'marked', archiveName: existing.name, imageUrl: existing.image_url });
-          updateSummary(marked, notFound, errors);
-
-        } catch (err) {
-          errors++;
-          results.push({ ...sold, result: 'error', archiveName: sold.title });
-          updateSummary(marked, notFound, errors);
+        const ack = xml.querySelector('Ack')?.textContent;
+        if (ack !== 'Success' && ack !== 'Warning') {
+          const errMsg = xml.querySelector('ShortMessage')?.textContent || 'Unknown eBay API error';
+          appendAccountHeader(account.nickname, `Error: ${errMsg}`);
+          continue;
         }
-      }
 
-      document.getElementById('ordersList').innerHTML = `
-        <div class="section-title">Results</div>
-        ${results.map(r => `
-          <div class="order-item">
-            ${r.imageUrl
-              ? `<img class="order-img" src="${r.imageUrl}" alt="${r.archiveName}">`
-              : `<div class="order-img-placeholder"></div>`
+        const orders = xml.querySelectorAll('OrderArray Order');
+
+        if (orders.length === 0) {
+          appendAccountHeader(account.nickname, 'No completed orders in this period');
+          continue;
+        }
+
+        const soldItems = [];
+        orders.forEach(order => {
+          const transactions = order.querySelectorAll('TransactionArray Transaction');
+          transactions.forEach(transaction => {
+            const itemId = transaction.querySelector('Item ItemID')?.textContent;
+            const title = transaction.querySelector('Item Title')?.textContent;
+            const price = transaction.querySelector('TransactionPrice')?.textContent;
+            if (itemId) soldItems.push({ itemId, title, price });
+          });
+        });
+
+        appendAccountHeader(account.nickname, `${soldItems.length} sold item${soldItems.length !== 1 ? 's' : ''} found`);
+
+        for (let i = 0; i < soldItems.length; i++) {
+          const sold = soldItems[i];
+
+          try {
+            const { data: existing, error: findError } = await db
+              .from('inventory')
+              .select('id, name, image_url, status')
+              .eq('ebay_item_id', sold.itemId)
+              .single();
+
+            if (findError || !existing) {
+              totalNotFound++;
+              appendResult({ ...sold, result: 'notfound', archiveName: sold.title });
+              continue;
             }
-            <div class="order-info">
-              <div class="order-name">${r.archiveName || r.title || 'Unknown item'}</div>
-              <div class="order-meta">eBay ID: ${r.itemId}${r.note ? ' · ' + r.note : ''}</div>
-            </div>
-            <div class="order-price">$${parseFloat(r.price || 0).toFixed(2)}</div>
-            <div class="order-badge ${r.result}">${r.result === 'marked' ? 'Marked sold' : r.result === 'notfound' ? 'Not found' : 'Error'}</div>
-          </div>
-        `).join('')}
-      `;
 
-      document.getElementById('progress').style.display = 'none';
-      showStatus(`Sync complete — ${marked} marked sold, ${notFound} not found in Archive, ${errors} errors.`, 'success');
+            if (existing.status === 'sold') {
+              totalNotFound++;
+              appendResult({ ...sold, result: 'notfound', archiveName: existing.name, note: 'already sold' });
+              continue;
+            }
 
-    } catch (err) {
-      showStatus('Error: ' + err.message, 'error');
-      document.getElementById('progress').style.display = 'none';
+            const { error: updateError } = await db
+              .from('inventory')
+              .update({ status: 'sold' })
+              .eq('id', existing.id);
+
+            if (updateError) throw updateError;
+
+            totalMarked++;
+            appendResult({ ...sold, result: 'marked', archiveName: existing.name, imageUrl: existing.image_url });
+
+          } catch (err) {
+            totalErrors++;
+            appendResult({ ...sold, result: 'error', archiveName: sold.title });
+          }
+
+          updateSummary(totalMarked, totalNotFound, totalErrors);
+        }
+
+      } catch (err) {
+        appendAccountHeader(account.nickname, `Error: ${err.message}`);
+      }
     }
 
-    btn.disabled = false;
-    btn.textContent = 'Sync orders';
+    updateProgress(100, 'Done');
+    setTimeout(() => { document.getElementById('progress').style.display = 'none'; }, 500);
+    showStatus(`Sync complete — ${totalMarked} marked sold, ${totalNotFound} not found, ${totalErrors} errors.`, 'success');
+    syncOneBtn.disabled = false;
+    syncAllBtn.disabled = false;
+  }
+
+  function appendAccountHeader(nickname, note) {
+    const list = document.getElementById('ordersList');
+    const div = document.createElement('div');
+    div.className = 'account-header';
+    div.textContent = `${nickname} — ${note}`;
+    list.appendChild(div);
+  }
+
+  function appendResult(r) {
+    const list = document.getElementById('ordersList');
+    const div = document.createElement('div');
+    div.className = 'order-item';
+    div.innerHTML = `
+      ${r.imageUrl
+        ? `<img class="order-img" src="${r.imageUrl}" alt="${r.archiveName}">`
+        : `<div class="order-img-placeholder"></div>`
+      }
+      <div class="order-info">
+        <div class="order-name">${r.archiveName || r.title || 'Unknown item'}</div>
+        <div class="order-meta">eBay ID: ${r.itemId}${r.note ? ' · ' + r.note : ''}</div>
+      </div>
+      <div class="order-price">$${parseFloat(r.price || 0).toFixed(2)}</div>
+      <div class="order-badge ${r.result}">${r.result === 'marked' ? 'Marked sold' : r.result === 'notfound' ? 'Not found' : 'Error'}</div>
+    `;
+    list.appendChild(div);
+  }
+
+  function resetResults() {
+    totalMarked = 0;
+    totalNotFound = 0;
+    totalErrors = 0;
+    updateSummary(0, 0, 0);
+    document.getElementById('ordersList').innerHTML = '';
   }
 
   function updateProgress(pct, text) {
@@ -377,15 +444,13 @@
     el.className = 'status ' + type;
   }
 
-  function clearForm() {
-    document.getElementById('userToken').value = '';
+  function clearResults() {
+    resetResults();
     document.getElementById('status').className = 'status';
     document.getElementById('progress').style.display = 'none';
     document.getElementById('summary').style.display = 'none';
     document.getElementById('ordersList').style.display = 'none';
-    document.getElementById('ordersList').innerHTML = '';
     updateProgress(0, '');
-    updateSummary(0, 0, 0);
   }
 
   init();
