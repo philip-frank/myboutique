@@ -210,7 +210,7 @@
   </select>
 </div>
 
-<p class="note">Matches completed eBay orders to Archive inventory by eBay item ID and marks them as sold. Run per account or sync all at once.</p>
+<p class="note">Matches completed eBay orders to Archive inventory by eBay item ID, marks them as sold, and logs the sale. Run per account or sync all at once.</p>
 
 <div class="btn-row">
   <button class="btn" id="syncOneBtn" onclick="syncOne()">Sync selected account</button>
@@ -330,11 +330,12 @@
         const soldItems = [];
         orders.forEach(order => {
           const transactions = order.querySelectorAll('TransactionArray Transaction');
+          const saleDate = order.querySelector('CreatedTime')?.textContent;
           transactions.forEach(transaction => {
             const itemId = transaction.querySelector('Item ItemID')?.textContent;
             const title = transaction.querySelector('Item Title')?.textContent;
             const price = transaction.querySelector('TransactionPrice')?.textContent;
-            if (itemId) soldItems.push({ itemId, title, price });
+            if (itemId) soldItems.push({ itemId, title, price, saleDate });
           });
         });
 
@@ -353,15 +354,18 @@
             if (findError || !existing) {
               totalNotFound++;
               appendResult({ ...sold, result: 'notfound', archiveName: sold.title });
+              updateSummary(totalMarked, totalNotFound, totalErrors);
               continue;
             }
 
             if (existing.status === 'sold') {
               totalNotFound++;
               appendResult({ ...sold, result: 'notfound', archiveName: existing.name, note: 'already sold' });
+              updateSummary(totalMarked, totalNotFound, totalErrors);
               continue;
             }
 
+            // Mark as sold in inventory
             const { error: updateError } = await db
               .from('inventory')
               .update({ status: 'sold' })
@@ -369,15 +373,25 @@
 
             if (updateError) throw updateError;
 
+            // Log to sales table
+            await db.from('sales').insert([{
+              item_name: existing.name,
+              ebay_item_id: sold.itemId,
+              sale_price: parseFloat(sold.price || 0),
+              sale_date: sold.saleDate ? new Date(sold.saleDate).toISOString() : new Date().toISOString(),
+              account_nickname: account.nickname,
+              inventory_id: existing.id
+            }]);
+
             totalMarked++;
             appendResult({ ...sold, result: 'marked', archiveName: existing.name, imageUrl: existing.image_url });
+            updateSummary(totalMarked, totalNotFound, totalErrors);
 
           } catch (err) {
             totalErrors++;
             appendResult({ ...sold, result: 'error', archiveName: sold.title });
+            updateSummary(totalMarked, totalNotFound, totalErrors);
           }
-
-          updateSummary(totalMarked, totalNotFound, totalErrors);
         }
 
       } catch (err) {
@@ -450,6 +464,7 @@
     document.getElementById('progress').style.display = 'none';
     document.getElementById('summary').style.display = 'none';
     document.getElementById('ordersList').style.display = 'none';
+    document.getElementById('ordersList').innerHTML = '';
     updateProgress(0, '');
   }
 
