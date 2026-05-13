@@ -280,7 +280,7 @@
   async function loadSales() {
     const { data, error } = await db
       .from('sales')
-      .select('*, inventory(image_url)')
+      .select('*')
       .order('sale_date', { ascending: false })
       .limit(10000);
 
