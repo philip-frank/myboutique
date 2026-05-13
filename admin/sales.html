@@ -352,7 +352,7 @@
     }
 
     document.getElementById('salesTableBody').innerHTML = sales.map(s => {
-      const imageUrl = s.inventory?.image_url || null;
+      const imageUrl = null;
       const date = s.sale_date ? new Date(s.sale_date).toLocaleDateString('en-US', {
         month: 'short', day: 'numeric', year: 'numeric'
       }) : '—';
