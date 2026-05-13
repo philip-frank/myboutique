@@ -1,1 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — Sales</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f9f9f7;
+    color: #111;
+    padding: 40px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+  }
+  .logo { font-size: 16px; font-weight: 300; letter-spacing: 0.25em; text-transform: uppercase; }
+  .logo span { font-size: 11px; opacity: 0.4; letter-spacing: 0.15em; margin-left: 12px; }
+  .back { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; color: #111; opacity: 0.5; }
+  .back:hover { opacity: 1; }
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 20px;
+    margin-top: 40px;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+  .stat-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 20px;
+  }
+  .stat-num {
+    font-size: 32px;
+    font-weight: 300;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+  }
+  .filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .filter-field { display: flex; flex-direction: column; gap: 6px; }
+  .filter-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+  }
+  select, input[type="date"] {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+  }
+  select:focus, input:focus { outline: none; border-color: #111; }
+  .btn {
+    padding: 10px 20px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+    align-self: flex-end;
+  }
+  .btn:hover { background: #333; }
+  .btn-outline {
+    background: none;
+    color: #111;
+    border: 0.5px solid rgba(0,0,0,0.2);
+  }
+  .btn-outline:hover { background: #f0f0ee; }
+  .sales-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+  .sales-table th {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    font-weight: 400;
+  }
+  .sales-table td {
+    padding: 12px;
+    font-size: 13px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.06);
+    vertical-align: middle;
+  }
+  .sale-img {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 2px;
+    background: #eee;
+  }
+  .sale-img-placeholder {
+    width: 36px;
+    height: 36px;
+    background: #f0f0ee;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .sale-name {
+    font-size: 13px;
+    line-height: 1.3;
+    max-width: 300px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .sale-account {
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    background: #f0f0ee;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .sale-price {
+    font-size: 14px;
+    font-weight: 300;
+    white-space: nowrap;
+  }
+  .sale-date {
+    font-size: 11px;
+    opacity: 0.4;
+    white-space: nowrap;
+  }
+  .empty {
+    text-align: center;
+    padding: 60px 40px;
+    font-size: 13px;
+    opacity: 0.4;
+    letter-spacing: 0.05em;
+  }
+  .account-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+  .account-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 16px;
+  }
+  .account-card-name {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .account-card-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .account-card-revenue {
+    font-size: 20px;
+    font-weight: 300;
+  }
+  .account-card-count {
+    font-size: 11px;
+    opacity: 0.4;
+    letter-spacing: 0.05em;
+  }
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .sales-table th:nth-child(4),
+    .sales-table td:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
 
+<header>
+  <div class="logo">Archive <span>Sales</span></div>
+  <a class="back" href="/admin">Back to admin</a>
+</header>
+
+<div class="section-title">Overview</div>
+<div class="stats">
+  <div class="stat-card"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Total sales</div></div>
+  <div class="stat-card"><div class="stat-num" id="statRevenue">—</div><div class="stat-label">Total revenue</div></div>
+  <div class="stat-card"><div class="stat-num" id="statToday">—</div><div class="stat-label">Today</div></div>
+  <div class="stat-card"><div class="stat-num" id="statThisMonth">—</div><div class="stat-label">This month</div></div>
+</div>
+
+<div class="section-title">By account</div>
+<div class="account-breakdown" id="accountBreakdown"></div>
+
+<div class="section-title">Sales log</div>
+<div class="filters">
+  <div class="filter-field">
+    <div class="filter-label">Account</div>
+    <select id="filterAccount">
+      <option value="">All accounts</option>
+    </select>
+  </div>
+  <div class="filter-field">
+    <div class="filter-label">From</div>
+    <input type="date" id="filterFrom">
+  </div>
+  <div class="filter-field">
+    <div class="filter-label">To</div>
+    <input type="date" id="filterTo">
+  </div>
+  <button class="btn" onclick="applyFilters()">Filter</button>
+  <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
+</div>
+
+<div id="salesTableWrap">
+  <table class="sales-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Item</th>
+        <th>Account</th>
+        <th>Date</th>
+        <th>Price</th>
+      </tr>
+    </thead>
+    <tbody id="salesTableBody">
+      <tr><td colspan="5"><div class="empty">Loading sales...</div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+
+  let db;
+  let allSales = [];
+
+  async function init() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    await loadSales();
+  }
+
+  async function loadSales() {
+    const { data, error } = await db
+      .from('sales')
+      .select('*, inventory(image_url)')
+      .order('sale_date', { ascending: false })
+      .limit(10000);
+
+    if (error) {
+      document.getElementById('salesTableBody').innerHTML =
+        '<tr><td colspan="5"><div class="empty">Error loading sales.</div></td></tr>';
+      return;
+    }
+
+    allSales = data || [];
+    renderAll(allSales);
+    populateAccountFilter();
+  }
+
+  function renderAll(sales) {
+    renderStats(sales);
+    renderAccountBreakdown(sales);
+    renderTable(sales);
+  }
+
+  function renderStats(sales) {
+    const total = sales.length;
+    const revenue = sales.reduce((sum, s) => sum + parseFloat(s.sale_price || 0), 0);
+
+    const today = new Date().toDateString();
+    const todayCount = sales.filter(s => new Date(s.sale_date).toDateString() === today).length;
+
+    const now = new Date();
+    const thisMonth = sales.filter(s => {
+      const d = new Date(s.sale_date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+
+    document.getElementById('statTotal').textContent = total.toLocaleString();
+    document.getElementById('statRevenue').textContent = '$' + Math.round(revenue).toLocaleString();
+    document.getElementById('statToday').textContent = todayCount.toLocaleString();
+    document.getElementById('statThisMonth').textContent = thisMonth.toLocaleString();
+  }
+
+  function renderAccountBreakdown(sales) {
+    const accounts = {};
+    sales.forEach(s => {
+      const name = s.account_nickname || 'Unknown';
+      if (!accounts[name]) accounts[name] = { count: 0, revenue: 0 };
+      accounts[name].count++;
+      accounts[name].revenue += parseFloat(s.sale_price || 0);
+    });
+
+    const sorted = Object.entries(accounts).sort((a, b) => b[1].revenue - a[1].revenue);
+
+    document.getElementById('accountBreakdown').innerHTML = sorted.length === 0
+      ? '<div style="font-size:13px;opacity:0.4;">No sales data yet.</div>'
+      : sorted.map(([name, data]) => `
+        <div class="account-card">
+          <div class="account-card-name">${name}</div>
+          <div class="account-card-stats">
+            <div class="account-card-revenue">$${Math.round(data.revenue).toLocaleString()}</div>
+            <div class="account-card-count">${data.count} sale${data.count !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+      `).join('');
+  }
+
+  function renderTable(sales) {
+    if (sales.length === 0) {
+      document.getElementById('salesTableBody').innerHTML =
+        '<tr><td colspan="5"><div class="empty">No sales found.</div></td></tr>';
+      return;
+    }
+
+    document.getElementById('salesTableBody').innerHTML = sales.map(s => {
+      const imageUrl = s.inventory?.image_url || null;
+      const date = s.sale_date ? new Date(s.sale_date).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      }) : '—';
+
+      return `
+        <tr>
+          <td>${imageUrl
+            ? `<img class="sale-img" src="${imageUrl}" alt="${s.item_name}">`
+            : `<div class="sale-img-placeholder"></div>`
+          }</td>
+          <td><div class="sale-name">${s.item_name || 'Unknown item'}</div></td>
+          <td><span class="sale-account">${s.account_nickname || '—'}</span></td>
+          <td><div class="sale-date">${date}</div></td>
+          <td><div class="sale-price">$${parseFloat(s.sale_price || 0).toFixed(2)}</div></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function populateAccountFilter() {
+    const accounts = [...new Set(allSales.map(s => s.account_nickname).filter(Boolean))].sort();
+    const select = document.getElementById('filterAccount');
+    select.innerHTML = '<option value="">All accounts</option>' +
+      accounts.map(a => `<option value="${a}">${a}</option>`).join('');
+  }
+
+  function applyFilters() {
+    const account = document.getElementById('filterAccount').value;
+    const from = document.getElementById('filterFrom').value;
+    const to = document.getElementById('filterTo').value;
+
+    let filtered = allSales;
+
+    if (account) filtered = filtered.filter(s => s.account_nickname === account);
+    if (from) filtered = filtered.filter(s => new Date(s.sale_date) >= new Date(from));
+    if (to) filtered = filtered.filter(s => new Date(s.sale_date) <= new Date(to + 'T23:59:59'));
+
+    renderAll(filtered);
+  }
+
+  function clearFilters() {
+    document.getElementById('filterAccount').value = '';
+    document.getElementById('filterFrom').value = '';
+    document.getElementById('filterTo').value = '';
+    renderAll(allSales);
+  }
+
+  init();
+</script>
+
+</body>
+</html>
