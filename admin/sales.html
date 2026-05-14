@@ -46,17 +46,8 @@
     border-radius: 2px;
     padding: 20px;
   }
-  .stat-num {
-    font-size: 32px;
-    font-weight: 300;
-    margin-bottom: 4px;
-  }
-  .stat-label {
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    opacity: 0.4;
-  }
+  .stat-num { font-size: 32px; font-weight: 300; margin-bottom: 4px; }
+  .stat-label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.4; }
   .filters {
     display: flex;
     gap: 12px;
@@ -65,12 +56,7 @@
     align-items: flex-end;
   }
   .filter-field { display: flex; flex-direction: column; gap: 6px; }
-  .filter-label {
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    opacity: 0.4;
-  }
+  .filter-label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.4; }
   select, input[type="date"] {
     padding: 10px 14px;
     font-size: 13px;
@@ -101,11 +87,24 @@
     border: 0.5px solid rgba(0,0,0,0.2);
   }
   .btn-outline:hover { background: #f0f0ee; }
-  .sales-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 8px;
+  .account-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
   }
+  .account-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 16px;
+  }
+  .account-card-name { font-size: 12px; font-weight: 500; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .account-card-stats { display: flex; justify-content: space-between; align-items: baseline; }
+  .account-card-revenue { font-size: 20px; font-weight: 300; }
+  .account-card-count { font-size: 11px; opacity: 0.4; letter-spacing: 0.05em; }
+  .account-card.no-sales { opacity: 0.4; }
+  .sales-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
   .sales-table th {
     font-size: 10px;
     letter-spacing: 0.15em;
@@ -153,52 +152,12 @@
     border-radius: 2px;
     white-space: nowrap;
   }
-  .sale-price {
-    font-size: 14px;
-    font-weight: 300;
-    white-space: nowrap;
-  }
-  .sale-date {
-    font-size: 11px;
-    opacity: 0.4;
-    white-space: nowrap;
-  }
+  .sale-price { font-size: 14px; font-weight: 300; white-space: nowrap; }
+  .sale-date { font-size: 11px; opacity: 0.4; white-space: nowrap; }
   .empty {
     text-align: center;
     padding: 60px 40px;
     font-size: 13px;
-    opacity: 0.4;
-    letter-spacing: 0.05em;
-  }
-  .account-breakdown {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
-    margin-bottom: 40px;
-  }
-  .account-card {
-    background: #fff;
-    border: 0.5px solid rgba(0,0,0,0.08);
-    border-radius: 2px;
-    padding: 16px;
-  }
-  .account-card-name {
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
-  }
-  .account-card-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-  }
-  .account-card-revenue {
-    font-size: 20px;
-    font-weight: 300;
-  }
-  .account-card-count {
-    font-size: 11px;
     opacity: 0.4;
     letter-spacing: 0.05em;
   }
@@ -225,7 +184,9 @@
 </div>
 
 <div class="section-title">By account</div>
-<div class="account-breakdown" id="accountBreakdown"></div>
+<div class="account-breakdown" id="accountBreakdown">
+  <div style="font-size:13px;opacity:0.4;">Loading...</div>
+</div>
 
 <div class="section-title">Sales log</div>
 <div class="filters">
@@ -270,11 +231,24 @@
 
   let db;
   let allSales = [];
+  let allAccounts = [];
 
   async function init() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    await loadSales();
+    await Promise.all([loadAccounts(), loadSales()]);
+    renderAll(allSales);
+    populateAccountFilter();
+  }
+
+  async function loadAccounts() {
+    const { data, error } = await db
+      .from('ebay_accounts')
+      .select('nickname')
+      .order('created_at', { ascending: true });
+    if (!error && data) {
+      allAccounts = data.map(a => a.nickname);
+    }
   }
 
   async function loadSales() {
@@ -283,16 +257,12 @@
       .select('*')
       .order('sale_date', { ascending: false })
       .limit(10000);
-
-    if (error) {
+    if (!error && data) {
+      allSales = data;
+    } else {
       document.getElementById('salesTableBody').innerHTML =
         '<tr><td colspan="5"><div class="empty">Error loading sales.</div></td></tr>';
-      return;
     }
-
-    allSales = data || [];
-    renderAll(allSales);
-    populateAccountFilter();
   }
 
   function renderAll(sales) {
@@ -304,16 +274,13 @@
   function renderStats(sales) {
     const total = sales.length;
     const revenue = sales.reduce((sum, s) => sum + parseFloat(s.sale_price || 0), 0);
-
     const today = new Date().toDateString();
     const todayCount = sales.filter(s => new Date(s.sale_date).toDateString() === today).length;
-
     const now = new Date();
     const thisMonth = sales.filter(s => {
       const d = new Date(s.sale_date);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length;
-
     document.getElementById('statTotal').textContent = total.toLocaleString();
     document.getElementById('statRevenue').textContent = '$' + Math.round(revenue).toLocaleString();
     document.getElementById('statToday').textContent = todayCount.toLocaleString();
@@ -321,27 +288,40 @@
   }
 
   function renderAccountBreakdown(sales) {
-    const accounts = {};
+    // Build sales data keyed by account
+    const salesByAccount = {};
     sales.forEach(s => {
       const name = s.account_nickname || 'Unknown';
-      if (!accounts[name]) accounts[name] = { count: 0, revenue: 0 };
-      accounts[name].count++;
-      accounts[name].revenue += parseFloat(s.sale_price || 0);
+      if (!salesByAccount[name]) salesByAccount[name] = { count: 0, revenue: 0 };
+      salesByAccount[name].count++;
+      salesByAccount[name].revenue += parseFloat(s.sale_price || 0);
     });
 
-    const sorted = Object.entries(accounts).sort((a, b) => b[1].revenue - a[1].revenue);
+    // Merge with all saved accounts so every account appears
+    const allAccountNames = new Set([
+      ...allAccounts,
+      ...Object.keys(salesByAccount)
+    ]);
 
-    document.getElementById('accountBreakdown').innerHTML = sorted.length === 0
-      ? '<div style="font-size:13px;opacity:0.4;">No sales data yet.</div>'
-      : sorted.map(([name, data]) => `
-        <div class="account-card">
+    const sorted = [...allAccountNames].sort((a, b) => {
+      const aRev = salesByAccount[a]?.revenue || 0;
+      const bRev = salesByAccount[b]?.revenue || 0;
+      return bRev - aRev;
+    });
+
+    document.getElementById('accountBreakdown').innerHTML = sorted.map(name => {
+      const data = salesByAccount[name] || { count: 0, revenue: 0 };
+      const noSales = data.count === 0;
+      return `
+        <div class="account-card ${noSales ? 'no-sales' : ''}">
           <div class="account-card-name">${name}</div>
           <div class="account-card-stats">
             <div class="account-card-revenue">$${Math.round(data.revenue).toLocaleString()}</div>
             <div class="account-card-count">${data.count} sale${data.count !== 1 ? 's' : ''}</div>
           </div>
         </div>
-      `).join('');
+      `;
+    }).join('');
   }
 
   function renderTable(sales) {
@@ -350,19 +330,13 @@
         '<tr><td colspan="5"><div class="empty">No sales found.</div></td></tr>';
       return;
     }
-
     document.getElementById('salesTableBody').innerHTML = sales.map(s => {
-      const imageUrl = null;
       const date = s.sale_date ? new Date(s.sale_date).toLocaleDateString('en-US', {
         month: 'short', day: 'numeric', year: 'numeric'
       }) : '—';
-
       return `
         <tr>
-          <td>${imageUrl
-            ? `<img class="sale-img" src="${imageUrl}" alt="${s.item_name}">`
-            : `<div class="sale-img-placeholder"></div>`
-          }</td>
+          <td><div class="sale-img-placeholder"></div></td>
           <td><div class="sale-name">${s.item_name || 'Unknown item'}</div></td>
           <td><span class="sale-account">${s.account_nickname || '—'}</span></td>
           <td><div class="sale-date">${date}</div></td>
@@ -373,23 +347,21 @@
   }
 
   function populateAccountFilter() {
-    const accounts = [...new Set(allSales.map(s => s.account_nickname).filter(Boolean))].sort();
+    const accountsInSales = [...new Set(allSales.map(s => s.account_nickname).filter(Boolean))].sort();
+    const allAccountNames = [...new Set([...allAccounts, ...accountsInSales])].sort();
     const select = document.getElementById('filterAccount');
     select.innerHTML = '<option value="">All accounts</option>' +
-      accounts.map(a => `<option value="${a}">${a}</option>`).join('');
+      allAccountNames.map(a => `<option value="${a}">${a}</option>`).join('');
   }
 
   function applyFilters() {
     const account = document.getElementById('filterAccount').value;
     const from = document.getElementById('filterFrom').value;
     const to = document.getElementById('filterTo').value;
-
     let filtered = allSales;
-
     if (account) filtered = filtered.filter(s => s.account_nickname === account);
     if (from) filtered = filtered.filter(s => new Date(s.sale_date) >= new Date(from));
     if (to) filtered = filtered.filter(s => new Date(s.sale_date) <= new Date(to + 'T23:59:59'));
-
     renderAll(filtered);
   }
 
