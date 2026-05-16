@@ -37,7 +37,7 @@ exports.handler = async function(event, context) {
   </RequesterCredentials>
   <CreateTimeFrom>${modTimeFromStr}</CreateTimeFrom>
   <CreateTimeTo>${new Date().toISOString().split('.')[0] + '.000Z'}</CreateTimeTo>
-  <OrderStatus>${orderStatus}</OrderStatus>
+  <OrderStatusFilter>${orderStatus}</OrderStatusFilter>
   <DetailLevel>ReturnAll</DetailLevel>
   <Pagination>
     <EntriesPerPage>100</EntriesPerPage>
