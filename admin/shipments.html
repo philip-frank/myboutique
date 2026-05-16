@@ -1,1 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — Shipments</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f9f9f7;
+    color: #111;
+    padding: 40px 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+  }
+  .logo { font-size: 16px; font-weight: 300; letter-spacing: 0.25em; text-transform: uppercase; }
+  .logo span { font-size: 11px; opacity: 0.4; letter-spacing: 0.15em; margin-left: 12px; }
+  .back { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; color: #111; opacity: 0.5; }
+  .back:hover { opacity: 1; }
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin-bottom: 20px;
+    margin-top: 40px;
+  }
+  .btn {
+    padding: 12px 24px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #333; }
+  .btn:disabled { background: #999; cursor: not-allowed; }
+  .btn-outline {
+    background: none;
+    color: #111;
+    border: 0.5px solid rgba(0,0,0,0.2);
+  }
+  .btn-outline:hover { background: #f0f0ee; }
+  .btn-small {
+    padding: 8px 14px;
+    font-size: 10px;
+  }
+  .btn-row { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+  .status {
+    margin-bottom: 20px;
+    font-size: 13px;
+    padding: 12px 16px;
+    border-radius: 2px;
+    display: none;
+  }
+  .status.info { display: block; background: #e8f0fe; color: #1a56c4; }
+  .status.success { display: block; background: #e6f4ea; color: #1e6e3a; }
+  .status.error { display: block; background: #fce8e8; color: #c0392b; }
+  .progress { margin-bottom: 20px; display: none; }
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #111;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-text { font-size: 12px; opacity: 0.5; letter-spacing: 0.05em; }
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+    display: none;
+  }
+  .summary-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-num { font-size: 28px; font-weight: 300; }
+  .summary-label { font-size: 11px; opacity: 0.5; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+  .shipment-item {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .shipment-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .shipment-img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 2px;
+    background: #eee;
+    flex-shrink: 0;
+  }
+  .shipment-img-placeholder {
+    width: 56px;
+    height: 56px;
+    background: #f0f0ee;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .shipment-info { flex: 1; }
+  .shipment-name { font-size: 14px; line-height: 1.3; margin-bottom: 6px; }
+  .shipment-meta { font-size: 11px; opacity: 0.4; letter-spacing: 0.05em; }
+  .shipment-meta span { margin-right: 12px; }
+  .shipment-price { font-size: 16px; font-weight: 300; white-space: nowrap; }
+  .shipment-buyer {
+    background: #f9f9f7;
+    border-radius: 2px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .buyer-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.4; margin-bottom: 4px; }
+  .buyer-name { font-weight: 500; margin-bottom: 2px; }
+  .buyer-address { opacity: 0.6; line-height: 1.5; }
+  .ship-form {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .ship-field { display: flex; flex-direction: column; gap: 6px; }
+  .ship-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.4; }
+  .ship-input, .ship-select {
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+    min-width: 160px;
+  }
+  .ship-input:focus, .ship-select:focus { outline: none; border-color: #111; }
+  .shipped-badge {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 2px;
+    background: #e6f4ea;
+    color: #1e6e3a;
+  }
+  .account-divider {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    padding: 12px 0 8px;
+    border-top: 0.5px solid rgba(0,0,0,0.06);
+    margin-top: 8px;
+  }
+  .empty {
+    text-align: center;
+    padding: 60px 40px;
+    font-size: 13px;
+    opacity: 0.4;
+    letter-spacing: 0.05em;
+  }
+  .note { font-size: 12px; opacity: 0.5; line-height: 1.6; margin-bottom: 24px; }
+</style>
+</head>
+<body>
 
+<header>
+  <div class="logo">Archive <span>Shipments</span></div>
+  <a class="back" href="/admin">Back to admin</a>
+</header>
+
+<p class="note">Shows all eBay orders awaiting shipment across your accounts. Enter a tracking number and carrier, then mark as shipped — this updates eBay and marks the item sold in Archive.</p>
+
+<div class="btn-row">
+  <button class="btn" id="fetchBtn" onclick="fetchAll()">Fetch awaiting shipment</button>
+  <button class="btn btn-outline" onclick="clearAll()">Clear</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="progress" id="progress">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">Fetching orders...</div>
+</div>
+
+<div class="summary-bar" id="summaryBar">
+  <div class="summary-card"><div class="summary-num" id="sumPending">0</div><div class="summary-label">Awaiting shipment</div></div>
+  <div class="summary-card"><div class="summary-num" id="sumShipped">0</div><div class="summary-label">Shipped this session</div></div>
+  <div class="summary-card"><div class="summary-num" id="sumValue">$0</div><div class="summary-label">Total value</div></div>
+</div>
+
+<div id="shipmentsList"></div>
+
+<script>
+  const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
+
+  let db;
+  let savedAccounts = [];
+  let allOrders = [];
+  let shippedCount = 0;
+
+  async function init() {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    await loadAccounts();
+  }
+
+  async function loadAccounts() {
+    const { data, error } = await db
+      .from('ebay_accounts')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (!error && data) savedAccounts = data;
+  }
+
+  async function fetchAll() {
+    if (savedAccounts.length === 0) {
+      showStatus('No saved accounts found. Add accounts first.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('fetchBtn');
+    btn.disabled = true;
+    allOrders = [];
+    shippedCount = 0;
+
+    document.getElementById('progress').style.display = 'block';
+    document.getElementById('summaryBar').style.display = 'grid';
+    document.getElementById('shipmentsList').innerHTML = '';
+    showStatus('Fetching awaiting shipment orders...', 'info');
+
+    for (let a = 0; a < savedAccounts.length; a++) {
+      const account = savedAccounts[a];
+      updateProgress((a / savedAccounts.length) * 100, `Checking ${account.nickname} (${a + 1} of ${savedAccounts.length})...`);
+
+      try {
+        const response = await fetch('/.netlify/functions/ebay-orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: account.token, mode: 'awaiting', daysBack: 60 })
+        });
+
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'text/xml');
+
+        const ack = xml.querySelector('Ack')?.textContent;
+        if (ack !== 'Success' && ack !== 'Warning') continue;
+
+        const orders = xml.querySelectorAll('OrderArray Order');
+        orders.forEach(order => {
+          const orderId = order.querySelector('OrderID')?.textContent;
+          const saleDate = order.querySelector('CreatedTime')?.textContent;
+          const buyerUserId = order.querySelector('BuyerUserID')?.textContent;
+          const shippingAddress = order.querySelector('ShippingAddress');
+          const buyerName = shippingAddress?.querySelector('Name')?.textContent || buyerUserId;
+          const street = shippingAddress?.querySelector('Street1')?.textContent || '';
+          const street2 = shippingAddress?.querySelector('Street2')?.textContent || '';
+          const city = shippingAddress?.querySelector('CityName')?.textContent || '';
+          const state = shippingAddress?.querySelector('StateOrProvince')?.textContent || '';
+          const zip = shippingAddress?.querySelector('PostalCode')?.textContent || '';
+          const country = shippingAddress?.querySelector('CountryName')?.textContent || '';
+
+          const address = [street, street2, city, state, zip, country].filter(Boolean).join(', ');
+
+          const transactions = order.querySelectorAll('TransactionArray Transaction');
+          transactions.forEach(transaction => {
+            const itemId = transaction.querySelector('Item ItemID')?.textContent;
+            const transactionId = transaction.querySelector('TransactionID')?.textContent;
+            const title = transaction.querySelector('Item Title')?.textContent;
+            const price = parseFloat(transaction.querySelector('TransactionPrice')?.textContent || '0');
+
+            if (itemId && transactionId) {
+              allOrders.push({
+                orderId,
+                itemId,
+                transactionId,
+                title,
+                price,
+                saleDate,
+                buyerName,
+                address,
+                accountNickname: account.nickname,
+                accountToken: account.token,
+                shipped: false
+              });
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error(`Error fetching ${account.nickname}:`, err);
+      }
+    }
+
+    updateProgress(100, 'Done');
+    setTimeout(() => { document.getElementById('progress').style.display = 'none'; }, 500);
+
+    if (allOrders.length === 0) {
+      showStatus('No orders awaiting shipment found.', 'success');
+      document.getElementById('summaryBar').style.display = 'none';
+    } else {
+      showStatus(`Found ${allOrders.length} order${allOrders.length !== 1 ? 's' : ''} awaiting shipment.`, 'success');
+      renderOrders();
+      updateSummary();
+    }
+
+    btn.disabled = false;
+  }
+
+  function renderOrders() {
+    const list = document.getElementById('shipmentsList');
+
+    // Group by account
+    const byAccount = {};
+    allOrders.forEach(order => {
+      if (!byAccount[order.accountNickname]) byAccount[order.accountNickname] = [];
+      byAccount[order.accountNickname].push(order);
+    });
+
+    list.innerHTML = Object.entries(byAccount).map(([account, orders]) => `
+      <div class="account-divider">${account} — ${orders.length} order${orders.length !== 1 ? 's' : ''}</div>
+      ${orders.map((order, idx) => `
+        <div class="shipment-item" id="order-${order.itemId}-${order.transactionId}">
+          <div class="shipment-header">
+            <div class="shipment-img-placeholder"></div>
+            <div class="shipment-info">
+              <div class="shipment-name">${order.title || 'Unknown item'}</div>
+              <div class="shipment-meta">
+                <span>eBay ID: ${order.itemId}</span>
+                <span>${order.saleDate ? new Date(order.saleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
+              </div>
+            </div>
+            <div class="shipment-price">$${order.price.toFixed(2)}</div>
+          </div>
+
+          <div class="shipment-buyer">
+            <div class="buyer-label">Ship to</div>
+            <div class="buyer-name">${order.buyerName || '—'}</div>
+            <div class="buyer-address">${order.address || '—'}</div>
+          </div>
+
+          <div class="ship-form" id="form-${order.itemId}-${order.transactionId}">
+            <div class="ship-field">
+              <div class="ship-label">Carrier</div>
+              <select class="ship-select" id="carrier-${order.itemId}-${order.transactionId}">
+                <option value="USPS">USPS</option>
+                <option value="UPS">UPS</option>
+                <option value="FedEx">FedEx</option>
+                <option value="DHL">DHL</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="ship-field">
+              <div class="ship-label">Tracking number (optional)</div>
+              <input class="ship-input" type="text" id="tracking-${order.itemId}-${order.transactionId}" placeholder="Enter tracking number...">
+            </div>
+            <button class="btn btn-small" onclick="markShipped('${order.itemId}', '${order.transactionId}', '${order.accountNickname}', '${order.accountToken}', ${order.price}, '${order.title?.replace(/'/g, "\\'")}', '${order.saleDate}')">
+              Mark shipped
+            </button>
+          </div>
+        </div>
+      `).join('')}
+    `).join('');
+  }
+
+  async function markShipped(itemId, transactionId, accountNickname, token, price, title, saleDate) {
+    const carrier = document.getElementById(`carrier-${itemId}-${transactionId}`)?.value || 'USPS';
+    const tracking = document.getElementById(`tracking-${itemId}-${transactionId}`)?.value?.trim() || '';
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Shipping...';
+
+    try {
+      // Call eBay CompleteSale
+      const response = await fetch('/.netlify/functions/ebay-complete-sale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, itemId, transactionId, trackingNumber: tracking, carrier })
+      });
+
+      const text = await response.text();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, 'text/xml');
+
+      const ack = xml.querySelector('Ack')?.textContent;
+      if (ack !== 'Success' && ack !== 'Warning') {
+        const errMsg = xml.querySelector('ShortMessage')?.textContent || 'eBay API error';
+        throw new Error(errMsg);
+      }
+
+      // Mark sold in Archive inventory
+      const { data: existing } = await db
+        .from('inventory')
+        .select('id, name')
+        .eq('ebay_item_id', itemId)
+        .single();
+
+      if (existing) {
+        await db.from('inventory').update({ status: 'sold' }).eq('id', existing.id);
+
+        // Log to sales table
+        await db.from('sales').insert([{
+          item_name: existing.name || title,
+          ebay_item_id: itemId,
+          sale_price: price,
+          sale_date: saleDate ? new Date(saleDate).toISOString() : new Date().toISOString(),
+          account_nickname: accountNickname,
+          inventory_id: existing.id
+        }]);
+      }
+
+      // Update UI
+      const form = document.getElementById(`form-${itemId}-${transactionId}`);
+      if (form) {
+        form.innerHTML = `<span class="shipped-badge">✓ Shipped${tracking ? ' — ' + tracking : ''}</span>`;
+      }
+
+      shippedCount++;
+      updateSummary();
+
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Mark shipped';
+      alert('Error: ' + err.message);
+    }
+  }
+
+  function updateSummary() {
+    const pending = allOrders.filter(o => !o.shipped).length;
+    const total = allOrders.reduce((sum, o) => sum + o.price, 0);
+    document.getElementById('sumPending').textContent = allOrders.length - shippedCount;
+    document.getElementById('sumShipped').textContent = shippedCount;
+    document.getElementById('sumValue').textContent = '$' + Math.round(total).toLocaleString();
+  }
+
+  function clearAll() {
+    allOrders = [];
+    shippedCount = 0;
+    document.getElementById('shipmentsList').innerHTML = '';
+    document.getElementById('status').className = 'status';
+    document.getElementById('progress').style.display = 'none';
+    document.getElementById('summaryBar').style.display = 'none';
+    updateProgress(0, '');
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function updateProgress(pct, text) {
+    document.getElementById('progressFill').style.width = Math.round(pct) + '%';
+    document.getElementById('progressText').textContent = text;
+  }
+
+  init();
+</script>
+
+</body>
+</html>
