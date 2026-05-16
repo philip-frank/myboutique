@@ -13,7 +13,7 @@ exports.handler = async function(event, context) {
   };
 
   try {
-    const { token, daysBack } = JSON.parse(event.body);
+    const { token, mode, daysBack } = JSON.parse(event.body);
 
     if (!token) {
       return {
@@ -22,6 +22,9 @@ exports.handler = async function(event, context) {
         body: JSON.stringify({ error: 'Token is required' })
       };
     }
+
+    // mode: 'awaiting' = active orders awaiting shipment, 'completed' = completed orders
+    const orderStatus = mode === 'completed' ? 'Completed' : 'Active';
 
     const modTimeFrom = new Date();
     modTimeFrom.setDate(modTimeFrom.getDate() - (daysBack || 30));
@@ -34,7 +37,7 @@ exports.handler = async function(event, context) {
   </RequesterCredentials>
   <CreateTimeFrom>${modTimeFromStr}</CreateTimeFrom>
   <CreateTimeTo>${new Date().toISOString().split('.')[0] + '.000Z'}</CreateTimeTo>
-  <OrderStatus>Completed</OrderStatus>
+  <OrderStatus>${orderStatus}</OrderStatus>
   <DetailLevel>ReturnAll</DetailLevel>
   <Pagination>
     <EntriesPerPage>100</EntriesPerPage>
