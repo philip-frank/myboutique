@@ -24,7 +24,7 @@ exports.handler = async function(event, context) {
     }
 
     // mode: 'awaiting' = active orders awaiting shipment, 'completed' = completed orders
-    const orderStatus = mode === 'completed' ? 'Completed' : 'Active';
+    const orderStatus = mode === 'completed' ? 'Completed' : 'AwaitingShipment';
     
     const modTimeFrom = new Date();
     modTimeFrom.setDate(modTimeFrom.getDate() - (daysBack || 30));
