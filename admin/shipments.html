@@ -54,11 +54,19 @@
     border: 0.5px solid rgba(0,0,0,0.2);
   }
   .btn-outline:hover { background: #f0f0ee; }
-  .btn-small {
-    padding: 8px 14px;
-    font-size: 10px;
+  .btn-small { padding: 8px 14px; font-size: 10px; }
+  .btn-row { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; align-items: center; }
+  .days-select {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-family: inherit;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #111;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
   }
-  .btn-row { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+  .days-select:focus { outline: none; border-color: #111; }
   .status {
     margin-bottom: 20px;
     font-size: 13px;
@@ -86,11 +94,10 @@
   }
   .progress-text { font-size: 12px; opacity: 0.5; letter-spacing: 0.05em; }
   .summary-bar {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-bottom: 32px;
-    display: none;
   }
   .summary-card {
     background: #fff;
@@ -199,10 +206,17 @@
   <a class="back" href="/admin">Back to admin</a>
 </header>
 
-<p class="note">Shows all eBay orders awaiting shipment across your accounts. Enter a tracking number and carrier, then mark as shipped — this updates eBay and marks the item sold in Archive.</p>
+<p class="note">Shows paid eBay orders that have not yet been marked as shipped, across all accounts. Add tracking and mark shipped to update eBay and Archive simultaneously.</p>
 
 <div class="btn-row">
   <button class="btn" id="fetchBtn" onclick="fetchAll()">Fetch awaiting shipment</button>
+  <select class="days-select" id="daysBack">
+    <option value="7">Last 7 days</option>
+    <option value="14" selected>Last 14 days</option>
+    <option value="30">Last 30 days</option>
+    <option value="60">Last 60 days</option>
+    <option value="90">Last 90 days</option>
+  </select>
   <button class="btn btn-outline" onclick="clearAll()">Clear</button>
 </div>
 
@@ -251,6 +265,7 @@
     }
 
     const btn = document.getElementById('fetchBtn');
+    const daysBack = parseInt(document.getElementById('daysBack').value);
     btn.disabled = true;
     allOrders = [];
     shippedCount = 0;
@@ -258,7 +273,7 @@
     document.getElementById('progress').style.display = 'block';
     document.getElementById('summaryBar').style.display = 'grid';
     document.getElementById('shipmentsList').innerHTML = '';
-    showStatus('Fetching awaiting shipment orders...', 'info');
+    showStatus('Fetching orders...', 'info');
 
     for (let a = 0; a < savedAccounts.length; a++) {
       const account = savedAccounts[a];
@@ -268,7 +283,7 @@
         const response = await fetch('/.netlify/functions/ebay-orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: account.token, mode: 'awaiting', daysBack: 60 })
+          body: JSON.stringify({ token: account.token, mode: 'awaiting', daysBack })
         });
 
         const text = await response.text();
@@ -290,9 +305,7 @@
           const city = shippingAddress?.querySelector('CityName')?.textContent || '';
           const state = shippingAddress?.querySelector('StateOrProvince')?.textContent || '';
           const zip = shippingAddress?.querySelector('PostalCode')?.textContent || '';
-          const country = shippingAddress?.querySelector('CountryName')?.textContent || '';
-
-          const address = [street, street2, city, state, zip, country].filter(Boolean).join(', ');
+          const address = [street, street2, city, state, zip].filter(Boolean).join(', ');
 
           const transactions = order.querySelectorAll('TransactionArray Transaction');
           transactions.forEach(transaction => {
@@ -300,8 +313,10 @@
             const transactionId = transaction.querySelector('TransactionID')?.textContent;
             const title = transaction.querySelector('Item Title')?.textContent;
             const price = parseFloat(transaction.querySelector('TransactionPrice')?.textContent || '0');
+            const shippedTime = transaction.querySelector('ShippedTime')?.textContent;
 
-            if (itemId && transactionId) {
+            // Only include if NOT yet shipped
+            if (itemId && transactionId && !shippedTime) {
               allOrders.push({
                 orderId,
                 itemId,
@@ -328,7 +343,7 @@
     setTimeout(() => { document.getElementById('progress').style.display = 'none'; }, 500);
 
     if (allOrders.length === 0) {
-      showStatus('No orders awaiting shipment found.', 'success');
+      showStatus('No orders awaiting shipment.', 'success');
       document.getElementById('summaryBar').style.display = 'none';
     } else {
       showStatus(`Found ${allOrders.length} order${allOrders.length !== 1 ? 's' : ''} awaiting shipment.`, 'success');
@@ -341,8 +356,6 @@
 
   function renderOrders() {
     const list = document.getElementById('shipmentsList');
-
-    // Group by account
     const byAccount = {};
     allOrders.forEach(order => {
       if (!byAccount[order.accountNickname]) byAccount[order.accountNickname] = [];
@@ -351,7 +364,7 @@
 
     list.innerHTML = Object.entries(byAccount).map(([account, orders]) => `
       <div class="account-divider">${account} — ${orders.length} order${orders.length !== 1 ? 's' : ''}</div>
-      ${orders.map((order, idx) => `
+      ${orders.map(order => `
         <div class="shipment-item" id="order-${order.itemId}-${order.transactionId}">
           <div class="shipment-header">
             <div class="shipment-img-placeholder"></div>
@@ -364,13 +377,11 @@
             </div>
             <div class="shipment-price">$${order.price.toFixed(2)}</div>
           </div>
-
           <div class="shipment-buyer">
             <div class="buyer-label">Ship to</div>
             <div class="buyer-name">${order.buyerName || '—'}</div>
             <div class="buyer-address">${order.address || '—'}</div>
           </div>
-
           <div class="ship-form" id="form-${order.itemId}-${order.transactionId}">
             <div class="ship-field">
               <div class="ship-label">Carrier</div>
@@ -386,7 +397,7 @@
               <div class="ship-label">Tracking number (optional)</div>
               <input class="ship-input" type="text" id="tracking-${order.itemId}-${order.transactionId}" placeholder="Enter tracking number...">
             </div>
-            <button class="btn btn-small" onclick="markShipped('${order.itemId}', '${order.transactionId}', '${order.accountNickname}', '${order.accountToken}', ${order.price}, '${order.title?.replace(/'/g, "\\'")}', '${order.saleDate}')">
+            <button class="btn btn-small" onclick="markShipped('${order.itemId}', '${order.transactionId}', '${order.accountNickname}', '${order.accountToken}', ${order.price}, \`${(order.title || '').replace(/`/g, "'")}\`, '${order.saleDate}')">
               Mark shipped
             </button>
           </div>
@@ -404,7 +415,6 @@
     btn.textContent = 'Shipping...';
 
     try {
-      // Call eBay CompleteSale
       const response = await fetch('/.netlify/functions/ebay-complete-sale', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -430,8 +440,6 @@
 
       if (existing) {
         await db.from('inventory').update({ status: 'sold' }).eq('id', existing.id);
-
-        // Log to sales table
         await db.from('sales').insert([{
           item_name: existing.name || title,
           ebay_item_id: itemId,
@@ -442,7 +450,6 @@
         }]);
       }
 
-      // Update UI
       const form = document.getElementById(`form-${itemId}-${transactionId}`);
       if (form) {
         form.innerHTML = `<span class="shipped-badge">✓ Shipped${tracking ? ' — ' + tracking : ''}</span>`;
@@ -459,10 +466,9 @@
   }
 
   function updateSummary() {
-    const pending = allOrders.filter(o => !o.shipped).length;
-    const total = allOrders.reduce((sum, o) => sum + o.price, 0);
     document.getElementById('sumPending').textContent = allOrders.length - shippedCount;
     document.getElementById('sumShipped').textContent = shippedCount;
+    const total = allOrders.reduce((sum, o) => sum + o.price, 0);
     document.getElementById('sumValue').textContent = '$' + Math.round(total).toLocaleString();
   }
 
