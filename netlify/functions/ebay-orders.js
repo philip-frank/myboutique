@@ -23,9 +23,10 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // mode: 'awaiting' = active orders awaiting shipment, 'completed' = completed orders
-    const orderStatus = mode === 'completed' ? 'Completed' : 'AwaitingShipment';
-    
+    // For awaiting shipment we fetch Completed (paid) orders and filter by ShippedTime on the client
+    // For completed sync we also use Completed
+    const orderStatus = 'Completed';
+
     const modTimeFrom = new Date();
     modTimeFrom.setDate(modTimeFrom.getDate() - (daysBack || 30));
     const modTimeFromStr = modTimeFrom.toISOString().split('.')[0] + '.000Z';
@@ -37,7 +38,7 @@ exports.handler = async function(event, context) {
   </RequesterCredentials>
   <CreateTimeFrom>${modTimeFromStr}</CreateTimeFrom>
   <CreateTimeTo>${new Date().toISOString().split('.')[0] + '.000Z'}</CreateTimeTo>
-  <OrderStatusFilter>${orderStatus}</OrderStatusFilter>
+  <OrderStatus>${orderStatus}</OrderStatus>
   <DetailLevel>ReturnAll</DetailLevel>
   <Pagination>
     <EntriesPerPage>100</EntriesPerPage>
