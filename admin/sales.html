@@ -297,7 +297,7 @@
       salesByAccount[name].revenue += parseFloat(s.sale_price || 0);
     });
 
-    // Merge with all saved accounts so every account appears
+   // Merge with all saved accounts so every account appears
     const allAccountNames = new Set([
       ...allAccounts,
       ...Object.keys(salesByAccount)
