@@ -297,10 +297,19 @@
       salesByAccount[name].revenue += parseFloat(s.sale_price || 0);
     });
 
-   // Merge with all saved accounts so every account appears
+   // Normalize sales account names by stripping "eBay — " prefix
+    const normalizedSales = {};
+    Object.entries(salesByAccount).forEach(([name, data]) => {
+      const stripped = name.replace(/^eBay — /i, '').trim();
+      if (!normalizedSales[stripped]) normalizedSales[stripped] = { count: 0, revenue: 0 };
+      normalizedSales[stripped].count += data.count;
+      normalizedSales[stripped].revenue += data.revenue;
+    });
+
+    // Merge with all saved accounts so every account appears
     const allAccountNames = new Set([
-      ...allAccounts,
-      ...Object.keys(salesByAccount)
+      ...allAccounts.map(a => a.replace(/^eBay — /i, '').trim()),
+      ...Object.keys(normalizedSales)
     ]);
 
     const sorted = [...allAccountNames].sort((a, b) => {
