@@ -43,19 +43,17 @@
     opacity: 0.5;
     margin-bottom: 8px;
   }
-  textarea {
+  select {
     width: 100%;
     padding: 12px 14px;
-    font-size: 12px;
+    font-size: 14px;
     font-family: inherit;
     border: 0.5px solid rgba(0,0,0,0.15);
     background: #fff;
     color: #111;
     border-radius: 2px;
-    resize: vertical;
-    min-height: 120px;
   }
-  textarea:focus { outline: none; border-color: #111; }
+  select:focus { outline: none; border-color: #111; }
   .btn {
     padding: 14px 24px;
     font-size: 11px;
@@ -76,7 +74,7 @@
     border: 0.5px solid rgba(0,0,0,0.2);
   }
   .btn-outline:hover { background: #f0f0ee; }
-  .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+  .btn-row { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
   .status {
     margin-top: 20px;
     font-size: 13px;
@@ -104,11 +102,10 @@
   }
   .progress-text { font-size: 12px; opacity: 0.5; letter-spacing: 0.05em; }
   .summary {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
-    margin-top: 40px;
-    display: none;
+    margin-top: 32px;
   }
   .summary-card {
     background: #f0f0ee;
@@ -124,6 +121,23 @@
     line-height: 1.6;
     margin-top: 8px;
   }
+  .no-accounts {
+    background: #fce8e8;
+    color: #c0392b;
+    padding: 12px 16px;
+    border-radius: 2px;
+    font-size: 13px;
+    display: none;
+  }
+  .account-header {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    padding: 12px 0 4px;
+    margin-top: 8px;
+    border-top: 0.5px solid rgba(0,0,0,0.06);
+  }
 </style>
 </head>
 <body>
@@ -135,16 +149,23 @@
 
 <div class="section-title">Update image quality</div>
 
-<div class="field">
-  <label>eBay User Token</label>
-  <textarea id="userToken" placeholder="Paste your eBay User Token here..."></textarea>
+<div class="no-accounts" id="noAccounts">
+  No saved accounts found. <a href="/admin/accounts.html" style="color:inherit;font-weight:500;">Add accounts →</a>
 </div>
 
-<p class="note">This tool fetches full resolution images from eBay for all imported items that have an eBay item ID stored. Run this once per account using that account's token. Items without an eBay item ID will be skipped.</p>
+<div class="field" id="accountField">
+  <label>Account</label>
+  <select id="accountSelect">
+    <option value="">Loading accounts...</option>
+  </select>
+</div>
+
+<p class="note">Fetches full resolution images from eBay for all imported items that have an eBay item ID stored. Run per account or update all at once. Items without an eBay item ID will be skipped.</p>
 
 <div class="btn-row">
-  <button class="btn" id="startBtn" onclick="startUpdate()">Start image update</button>
-  <button class="btn btn-outline" onclick="document.getElementById('userToken').value=''">Clear</button>
+  <button class="btn" id="updateOneBtn" onclick="updateOne()">Update selected account</button>
+  <button class="btn" id="updateAllBtn" onclick="updateAll()">Update all accounts</button>
+  <button class="btn btn-outline" onclick="clearResults()">Clear</button>
 </div>
 
 <div class="status" id="status"></div>
@@ -160,100 +181,160 @@
   <div class="summary-card"><div class="summary-num" id="sumErrors">0</div><div class="summary-label">Errors</div></div>
 </div>
 
+<div id="accountLog"></div>
+
 <script>
   const SUPABASE_URL = 'https://otlqamyuzkslsnpohijp.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bHFhbXl1emtzbHNucG9oaWpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDcwMjQsImV4cCI6MjA5MTg4MzAyNH0.sFgVZVTr20ODesG9Snwx3pr6R9z2B4XRbpz-iCCRgNw';
 
   let db;
+  let savedAccounts = [];
+  let totalUpdated = 0;
+  let totalSkipped = 0;
+  let totalErrors = 0;
 
   async function init() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    await loadAccounts();
   }
 
-  async function startUpdate() {
-    const token = document.getElementById('userToken').value.trim();
-    if (!token) { showStatus('Please paste your eBay User Token.', 'error'); return; }
+  async function loadAccounts() {
+    const { data, error } = await db
+      .from('ebay_accounts')
+      .select('*')
+      .order('created_at', { ascending: true });
 
-    const btn = document.getElementById('startBtn');
-    btn.disabled = true;
-    btn.textContent = 'Running...';
-
-    showStatus('Loading items from database...', 'info');
-
-    const { data: items, error } = await db
-      .from('inventory')
-      .select('id, name, ebay_item_id')
-      .not('ebay_item_id', 'is', null)
-      .limit(10000);
-
-    if (error) {
-      showStatus('Error loading inventory: ' + error.message, 'error');
-      btn.disabled = false;
-      btn.textContent = 'Start image update';
+    if (error || !data || data.length === 0) {
+      document.getElementById('noAccounts').style.display = 'block';
+      document.getElementById('accountField').style.display = 'none';
+      document.getElementById('updateOneBtn').disabled = true;
+      document.getElementById('updateAllBtn').disabled = true;
       return;
     }
 
-    showStatus(`Found ${items.length} items with eBay IDs. Fetching full resolution images...`, 'info');
+    savedAccounts = data;
+    const select = document.getElementById('accountSelect');
+    select.innerHTML = data.map(a => `<option value="${a.id}">${a.nickname}</option>`).join('');
+  }
+
+  async function updateOne() {
+    const accountId = document.getElementById('accountSelect').value;
+    const account = savedAccounts.find(a => a.id === accountId);
+    if (!account) { showStatus('Please select an account.', 'error'); return; }
+    resetResults();
+    await runUpdate([account]);
+  }
+
+  async function updateAll() {
+    if (savedAccounts.length === 0) { showStatus('No saved accounts found.', 'error'); return; }
+    resetResults();
+    await runUpdate(savedAccounts);
+  }
+
+  async function runUpdate(accounts) {
+    const updateOneBtn = document.getElementById('updateOneBtn');
+    const updateAllBtn = document.getElementById('updateAllBtn');
+    updateOneBtn.disabled = true;
+    updateAllBtn.disabled = true;
+
     document.getElementById('progress').style.display = 'block';
     document.getElementById('summary').style.display = 'grid';
 
-    let updated = 0;
-    let skipped = 0;
-    let errors = 0;
+    showStatus(`Updating images for ${accounts.length} account${accounts.length > 1 ? 's' : ''}...`, 'info');
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      updateProgress(((i + 1) / items.length) * 100, `Processing ${i + 1} of ${items.length} — ${item.name.substring(0, 40)}...`);
+    for (let a = 0; a < accounts.length; a++) {
+      const account = accounts[a];
 
-      try {
-        await new Promise(r => setTimeout(r, 200));
+      appendAccountHeader(`${account.nickname} — fetching items...`);
+      updateProgress((a / accounts.length) * 100, `Loading items for ${account.nickname}...`);
 
-        const response = await fetch('/.netlify/functions/ebay-getitem', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, itemId: item.ebay_item_id })
-        });
+      // Fetch items for this account from inventory
+      const { data: items, error } = await db
+        .from('inventory')
+        .select('id, name, ebay_item_id')
+        .eq('source', `eBay — ${account.nickname}`)
+        .not('ebay_item_id', 'is', null)
+        .limit(10000);
 
-        const text = await response.text();
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, 'text/xml');
+      if (error || !items || items.length === 0) {
+        appendAccountHeader(`${account.nickname} — no items found`);
+        continue;
+      }
 
-        const ack = xml.querySelector('Ack')?.textContent;
-        if (ack !== 'Success' && ack !== 'Warning') {
-          skipped++;
-          updateSummary(updated, skipped, errors);
-          continue;
+      appendAccountHeader(`${account.nickname} — ${items.length} items to process`);
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const overallPct = ((a / accounts.length) + (i / items.length / accounts.length)) * 100;
+        updateProgress(overallPct, `${account.nickname} — ${i + 1} of ${items.length}: ${item.name.substring(0, 40)}...`);
+
+        try {
+          await new Promise(r => setTimeout(r, 200));
+
+          const response = await fetch('/.netlify/functions/ebay-getitem', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: account.token, itemId: item.ebay_item_id })
+          });
+
+          const text = await response.text();
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(text, 'text/xml');
+
+          const ack = xml.querySelector('Ack')?.textContent;
+          if (ack !== 'Success' && ack !== 'Warning') {
+            totalSkipped++;
+            updateSummary();
+            continue;
+          }
+
+          const pictureUrls = xml.querySelectorAll('Item PictureDetails PictureURL');
+          if (pictureUrls.length === 0) {
+            totalSkipped++;
+            updateSummary();
+            continue;
+          }
+
+          const bestImage = pictureUrls[0].textContent;
+
+          const { error: updateError } = await db
+            .from('inventory')
+            .update({ image_url: bestImage })
+            .eq('id', item.id);
+
+          if (updateError) throw updateError;
+          totalUpdated++;
+          updateSummary();
+
+        } catch (err) {
+          totalErrors++;
+          updateSummary();
         }
-
-        const pictureUrls = xml.querySelectorAll('Item PictureDetails PictureURL');
-        if (pictureUrls.length === 0) {
-          skipped++;
-          updateSummary(updated, skipped, errors);
-          continue;
-        }
-
-        const bestImage = pictureUrls[0].textContent;
-
-        const { error: updateError } = await db
-          .from('inventory')
-          .update({ image_url: bestImage })
-          .eq('id', item.id);
-
-        if (updateError) throw updateError;
-        updated++;
-        updateSummary(updated, skipped, errors);
-
-      } catch (err) {
-        errors++;
-        updateSummary(updated, skipped, errors);
       }
     }
 
-    showStatus(`Complete — ${updated} updated, ${skipped} skipped, ${errors} errors.`, 'success');
-    document.getElementById('progress').style.display = 'none';
-    btn.disabled = false;
-    btn.textContent = 'Start image update';
+    updateProgress(100, 'Done');
+    setTimeout(() => { document.getElementById('progress').style.display = 'none'; }, 500);
+    showStatus(`Complete — ${totalUpdated} updated, ${totalSkipped} skipped, ${totalErrors} errors.`, 'success');
+    updateOneBtn.disabled = false;
+    updateAllBtn.disabled = false;
+  }
+
+  function appendAccountHeader(text) {
+    const log = document.getElementById('accountLog');
+    const div = document.createElement('div');
+    div.className = 'account-header';
+    div.textContent = text;
+    log.appendChild(div);
+  }
+
+  function resetResults() {
+    totalUpdated = 0;
+    totalSkipped = 0;
+    totalErrors = 0;
+    updateSummary();
+    document.getElementById('accountLog').innerHTML = '';
   }
 
   function updateProgress(pct, text) {
@@ -261,16 +342,25 @@
     document.getElementById('progressText').textContent = text;
   }
 
-  function updateSummary(updated, skipped, errors) {
-    document.getElementById('sumUpdated').textContent = updated;
-    document.getElementById('sumSkipped').textContent = skipped;
-    document.getElementById('sumErrors').textContent = errors;
+  function updateSummary() {
+    document.getElementById('sumUpdated').textContent = totalUpdated;
+    document.getElementById('sumSkipped').textContent = totalSkipped;
+    document.getElementById('sumErrors').textContent = totalErrors;
   }
 
   function showStatus(msg, type) {
     const el = document.getElementById('status');
     el.textContent = msg;
     el.className = 'status ' + type;
+  }
+
+  function clearResults() {
+    resetResults();
+    document.getElementById('status').className = 'status';
+    document.getElementById('progress').style.display = 'none';
+    document.getElementById('summary').style.display = 'none';
+    document.getElementById('accountLog').innerHTML = '';
+    updateProgress(0, '');
   }
 
   init();
