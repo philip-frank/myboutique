@@ -304,13 +304,13 @@
     ]);
 
     const sorted = [...allAccountNames].sort((a, b) => {
-      const aRev = salesByAccount[a]?.revenue || 0;
-      const bRev = salesByAccount[b]?.revenue || 0;
+      const aRev = normalizedSales[a]?.revenue || 0;
+      const bRev = normalizedSales[b]?.revenue || 0;
       return bRev - aRev;
     });
 
     document.getElementById('accountBreakdown').innerHTML = sorted.map(name => {
-      const data = salesByAccount[name] || { count: 0, revenue: 0 };
+      const data = normalizedSales[name] || { count: 0, revenue: 0 };
       const noSales = data.count === 0;
       return `
         <div class="account-card ${noSales ? 'no-sales' : ''}">
